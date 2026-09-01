@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1788251835909,
+      "tag": "0000_shallow_crystal",
+      "breakpoints": true
+    }
+  ]
+}
