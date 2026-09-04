@@ -28,6 +28,7 @@
           "open": {
             ".validate": "newData.isBoolean()"
           },
+          "showAnswers": { ".validate": "newData.isBoolean()" },
           "createdAt": {
             ".validate": "newData.isNumber() && ((!data.exists() && newData.val() <= now) || newData.val() === data.val())"
           },

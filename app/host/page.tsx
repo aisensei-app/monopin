@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { ArrowUpRight, RotateCcw, Users, Maximize, Minimize, Pencil, Copy, Check } from 'lucide-react';
+import { ArrowUpRight, RotateCcw, Users, Maximize, Minimize, Pencil, Copy, Check, Eye, EyeOff, List, Home, SlidersHorizontal, X } from 'lucide-react';
 import { PinBoard } from '@/components/pin-board';
 import { Wordmark } from '@/components/wordmark';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
@@ -22,6 +22,7 @@ export default function HostPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [editing, setEditing] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [draft, setDraft] = useState(QUESTION);
   const [fullscreen, setFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -38,9 +39,9 @@ export default function HostPage() {
   const total = data?.pins.length || 0;
   let moodPoints:MoodPoint[]|undefined;
   try { moodPoints = data?.template === 'mood' && data.layout ? (JSON.parse(data.layout) as MoodPoint[]) : undefined; } catch { moodPoints=defaultMoodPoints.slice(0,4); }
-  async function update(action: 'reset' | 'question' | 'open') {
+  async function update(action: 'reset' | 'question' | 'open' | 'visibility') {
     setBusy(true); setMessage('');
-    try { await mutate({ action, question: draft, open: !data?.open }); setConfirm(false); setEditing(false); }
+    try { await mutate({ action, question: draft, open: !data?.open, visible: !data?.showAnswers }); setConfirm(false); setEditing(false); }
     catch { setMessage('更新できませんでした。接続を確認して、もう一度お試しください。'); }
     finally { setBusy(false); }
   }
@@ -62,8 +63,8 @@ export default function HostPage() {
           <div className="question-topline"><div className="question-index"><span>01</span> みんなのピン</div><span className="anonymous-label">匿名で回答</span></div>
           <h1 id="host-question">{data?.question || QUESTION}</h1>
           <div className="results-heading"><p>今の気持ちに近い「場所」に、ピンを。</p><div className="total"><Users size={21} /><strong>{total}</strong><span>人が回答</span></div></div>
-          <div className="host-board-wrap"><PinBoard pins={data?.pins || []} moodPoints={moodPoints} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} /></div>
-          <div className="results-footnote" role="status">{error || message || (total ? '表情の間にも置けます。ピンが重なる場所ほど、色が濃くなります。' : 'まだピンはありません。QRコードから参加して、好きな場所をタップ。')}</div>
+          <div className="host-board-wrap"><PinBoard pins={data?.showAnswers === false ? [] : data?.pins || []} moodPoints={moodPoints} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} /></div>
+          <div className="results-footnote" role="status">{error || message || (data?.showAnswers === false ? '回答は主催者画面で非表示です。参加者の回答は受け付けています。' : (total ? '表情の間にも置けます。ピンが重なる場所ほど、色が濃くなります。' : 'まだピンはありません。QRコードから参加して、好きな場所をタップ。'))}</div>
         </section>
         <aside className="participation-panel">
           <div className="join-card"><span className="eyebrow">スマホで参加</span><h2>読み取って、<br />気持ちを教えてください。</h2><div className="qr-frame">{joinUrl && <QRCodeSVG value={joinUrl} size={208} level="M" fgColor="#254854" />}</div><p>カメラでQRコードを読み取るだけ。<br />名前の入力は必要ありません。</p><div className="join-link"><span>{joinUrl || '接続準備中…'}</span><button onClick={copyLink} disabled={!joinUrl} aria-label="参加用URLをコピー">{copied ? <Check size={18} /> : <Copy size={18} />}</button></div><span className="network-note">{localOnly ? 'お試し中：このPCと同じWi-Fiで参加できます。' : '離れた場所からも、このURLで参加できます。'}</span></div>
@@ -71,8 +72,9 @@ export default function HostPage() {
           <p className="preview-note">別タブで学生の画面が開きます</p>
         </aside>
       </div>
-      <div className="room-controls"><a className="text-button" href={homeUrl}>別の部屋をつくる</a><button className="primary-button" disabled={!data || busy || mutating} onClick={()=>update('open')}>{data?.open ? '受付を終了する' : '受付を再開する'}</button></div><footer className="host-footer"><span>{cloudMode ? 'ピンはリアルタイムで共有されます' : 'ピンは約1秒ごとに更新されます'}</span><div><button className="text-button" onClick={() => { setDraft(data?.question || QUESTION); setEditing(!editing); }} disabled={busy || !data}><Pencil size={16} />質問を編集</button><button className="text-button" onClick={() => setConfirm(true)} disabled={busy || !data || !total}><RotateCcw size={16} />回答をリセット</button></div></footer>
-      {editing && <form className="question-editor" onSubmit={(e) => { e.preventDefault(); update('question'); }}><label htmlFor="question-draft">質問文</label><textarea id="question-draft" value={draft} maxLength={160} onChange={(e) => setDraft(e.target.value)} /><p>質問を変更すると、現在の回答はリセットされます。</p><div><button type="button" className="text-button" disabled={busy} onClick={() => setEditing(false)}>キャンセル</button><button className="primary-button" disabled={busy || !draft.trim()}>{busy ? '更新中…' : '質問を更新'}</button></div></form>}
+      <div className="host-dock" aria-label="主催者の操作"><button className="host-dock-main" disabled={!data || busy || mutating} onClick={()=>update('open')}>{data?.open ? '■ 受付を終了' : '▶ 回答を開始'}</button><div className="host-dock-icons"><button className="host-dock-icon" onClick={() => { if (!data?.open) { setDraft(data?.question || QUESTION); setEditing(true); } }} disabled={!data || !!data.open} aria-label={data?.open ? '受付中は編集できません' : '質問を編集'} title={data?.open ? '受付中は編集できません' : '質問を編集'}><Pencil size={19}/></button><button className="host-dock-icon" onClick={()=>update('visibility')} disabled={!data || busy} aria-label={data?.showAnswers === false ? '回答を表示する' : '回答を非表示にする'} title={data?.showAnswers === false ? '回答を表示する' : '回答を非表示にする'}>{data?.showAnswers === false ? <Eye size={20}/> : <EyeOff size={20}/>}</button><button className="host-dock-icon" onClick={() => setConfirm(true)} disabled={busy || !data || !total} aria-label="回答をリセット" title="回答をリセット"><RotateCcw size={19}/></button><button className="host-dock-icon" onClick={() => setToolsOpen(!toolsOpen)} aria-label="移動と設定" title="移動と設定"><SlidersHorizontal size={20}/></button></div></div>
+      {toolsOpen && <div className="host-tools-popover"><a href={roomUrl('editor',room)}><List size={17}/>質問一覧</a><a href={homeUrl}><Home size={17}/>部屋一覧・トップ</a><button onClick={toggleFullscreen}>{fullscreen?<Minimize size={17}/>:<Maximize size={17}/>}全画面表示</button></div>}
+      {editing && <aside className="host-edit-panel" aria-label="質問を編集"><div className="host-edit-heading"><strong>質問を編集</strong><button className="icon-button" onClick={()=>setEditing(false)} aria-label="編集を閉じる"><X size={19}/></button></div><form onSubmit={(e) => { e.preventDefault(); update('question'); }}><label htmlFor="question-draft">質問文</label><textarea id="question-draft" value={draft} maxLength={160} onChange={(e) => setDraft(e.target.value)} /><p>更新すると、現在の回答は新しい質問用に切り替わります。</p><a className="text-button" href={roomUrl('editor',room)}><SlidersHorizontal size={16}/>画面・文字を整える</a><button className="primary-button" disabled={busy || !draft.trim()}>{busy ? '更新中…' : '更新'}</button></form></aside>}
       <AlertDialog open={confirm} onOpenChange={(open) => { if (!busy) setConfirm(open); }}><AlertDialogContent><AlertDialogTitle>回答をリセットしますか？</AlertDialogTitle><AlertDialogDescription>今の{total}人分の回答を消して、同じ質問にもう一度回答できるようにします。</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel disabled={busy}>キャンセル</AlertDialogCancel><AlertDialogAction disabled={busy} onClick={() => update('reset')}>{busy ? 'リセット中…' : 'リセットする'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </main>
   );
