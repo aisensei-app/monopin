@@ -217,4 +217,21 @@ button:focus-visible,a:focus-visible,textarea:focus-visible { outline:3px solid 
 .question-actions button { display:grid; place-items:center; width:33px; height:33px; border:0; border-radius:8px; background:transparent; color:#52717b; }
 .question-actions button:hover:not(:disabled) { background:#edfafa; color:#276877; }
 .editor-start { display:flex; justify-content:center; align-items:center; gap:8px; margin-top:22px; width:100%; padding:14px; }
+.composer { margin:0 0 16px; padding:18px; border-radius:14px; background:#edfafa; }
+.composer label,.composer-label { display:block; font-weight:700; font-size:14px; margin:0 0 8px; }
+.composer textarea,.composer input { display:block; width:100%; padding:12px; border:1px solid #a6d4da; border-radius:9px; background:#fff; font:inherit; }
+.composer textarea { min-height:106px; resize:vertical; }
+.composer-steps { display:flex; gap:16px; margin-bottom:18px; color:#718b91; font-size:13px; font-weight:700; }
+.composer-steps .is-current { color:#276877; }
+.composer-actions { display:flex; justify-content:flex-end; align-items:center; gap:12px; margin-top:14px; }
+.template-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:12px; }
+.template-card { min-height:104px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border:1px solid #b9dfe3; border-radius:12px; background:#fff; color:#254854; }
+.template-card:hover,.template-card.is-selected { border-color:#30a3b3; background:#f7fcfc; }
+.template-card small { color:#68848b; font-size:11px; }
+.template-art { display:grid; place-items:center; width:36px; height:36px; color:#276877; font-size:24px; }
+.template-art.matrix { font-size:32px; } .template-art.free { font-size:38px; }
+.template-preview { min-height:92px; margin:0 0 14px; padding:15px; border:1px solid #b9dfe3; border-radius:12px; background:#fff; color:#52717b; }
+.template-preview strong { display:block; color:#254854; }
+.template-preview p { margin:5px 0; font-size:13px; }.template-preview img { display:block; width:100%; max-height:200px; object-fit:contain; margin:9px 0; border-radius:8px; }
+.image-choice { display:inline-flex!important; align-items:center; gap:7px; margin:10px 0 0!important; color:#276877; cursor:pointer; }.image-choice input { display:none; }
 @media(max-width:480px) { .editor-shell { padding:0 16px 30px; } .editor-card { padding:24px 18px; } .prepared-question { gap:7px; padding:10px; } .question-actions button { width:29px; } }
