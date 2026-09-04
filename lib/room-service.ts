@@ -1,5 +1,5 @@
 import type { PinState } from './pinboard';
-export type RoomState = PinState & { title: string; layout?: string; open: boolean; isHost: boolean };
+export type RoomState = PinState & { title: string; layout?: string; template?: string; open: boolean; isHost: boolean };
 export type RoomAction = { action: 'vote' | 'reset' | 'question' | 'open'; x?: number; y?: number; question?: string; open?: boolean; revision?: number };
 export type { SavedRoom } from './firebase-room-service';
 export const cloudMode = process.env.NEXT_PUBLIC_ROOM_BACKEND === 'firebase';

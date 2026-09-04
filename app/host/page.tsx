@@ -10,6 +10,7 @@ import { QUESTION } from '@/lib/reactions';
 import { useEventRoom } from '@/hooks/use-event-room';
 import { roomFromLocation, roomUrl, cloudMode, loginHost } from '@/lib/room-service';
 import { defaultMoodPoints, type MoodPoint } from '@/components/mood-configurator';
+import type { QuestionTemplate } from '@/lib/firebase-room-service';
 
 export default function HostPage() {
   const [room,setRoom] = useState('');
@@ -36,7 +37,7 @@ export default function HostPage() {
   }, []);
   const total = data?.pins.length || 0;
   let moodPoints:MoodPoint[]|undefined;
-  try { moodPoints = data?.layout ? (JSON.parse(data.layout) as MoodPoint[]) : undefined; } catch { moodPoints=defaultMoodPoints.slice(0,4); }
+  try { moodPoints = data?.template === 'mood' && data.layout ? (JSON.parse(data.layout) as MoodPoint[]) : undefined; } catch { moodPoints=defaultMoodPoints.slice(0,4); }
   async function update(action: 'reset' | 'question' | 'open') {
     setBusy(true); setMessage('');
     try { await mutate({ action, question: draft, open: !data?.open }); setConfirm(false); setEditing(false); }
@@ -61,7 +62,7 @@ export default function HostPage() {
           <div className="question-topline"><div className="question-index"><span>01</span> みんなのピン</div><span className="anonymous-label">匿名で回答</span></div>
           <h1 id="host-question">{data?.question || QUESTION}</h1>
           <div className="results-heading"><p>今の気持ちに近い「場所」に、ピンを。</p><div className="total"><Users size={21} /><strong>{total}</strong><span>人が回答</span></div></div>
-          <div className="host-board-wrap"><PinBoard pins={data?.pins || []} moodPoints={moodPoints} /></div>
+          <div className="host-board-wrap"><PinBoard pins={data?.pins || []} moodPoints={moodPoints} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} /></div>
           <div className="results-footnote" role="status">{error || message || (total ? '表情の間にも置けます。ピンが重なる場所ほど、色が濃くなります。' : 'まだピンはありません。QRコードから参加して、好きな場所をタップ。')}</div>
         </section>
         <aside className="participation-panel">
