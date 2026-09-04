@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, signInAnonymously, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { getDatabase, ref, get, set, remove, onValue, runTransaction, serverTimestamp } from 'firebase/database';
+import { getDatabase, ref, set, remove, onValue, runTransaction, serverTimestamp } from 'firebase/database';
 import type { RoomAction, RoomState } from './room-service';
 
 const raw = process.env.NEXT_PUBLIC_FIREBASE_CONFIG || '';
@@ -35,8 +35,6 @@ export async function createRoom(title: string,question: string) {
 export async function changeRoom(room: string,action: RoomAction) {
   const user = await identity();
   const {db} = services();
-  const connected = await get(ref(db,'.info/connected'));
-  if (!connected.val()) throw new Error('通信が切れています。接続後にもう一度お試しください。');
   if (action.action === 'vote') {
     await set(ref(db,`rooms/${room}/pins/${action.revision}/${user.uid}`),{x:action.x,y:action.y,updatedAt:serverTimestamp()});
     return;
