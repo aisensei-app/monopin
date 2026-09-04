@@ -4,7 +4,7 @@ export type RoomAction = { action: 'vote' | 'reset' | 'question' | 'open'; x?: n
 export type { SavedRoom } from './firebase-room-service';
 export const cloudMode = process.env.NEXT_PUBLIC_ROOM_BACKEND === 'firebase';
 
-export function roomUrl(view: 'home' | 'host' | 'join', room = '', forSharing = false) {
+export function roomUrl(view: 'home' | 'host' | 'join' | 'editor', room = '', forSharing = false) {
   const url = new URL(window.location.href);
   if (!cloudMode) url.pathname = url.pathname.replace(/\/(host|join)\/?$/, '/');
   url.search = ''; url.hash = '';
@@ -29,9 +29,9 @@ async function localRequest(body: object) {
 export async function loginHost() {
   if (cloudMode) await (await import('./firebase-room-service')).loginHost();
 }
-export async function createRoom(title: string, question: string): Promise<string> {
-  if (cloudMode) return (await import('./firebase-room-service')).createRoom(title,question);
-  return (await localRequest({ action: 'create', title, question })).room;
+export async function createRoom(title: string): Promise<string> {
+  if (cloudMode) return (await import('./firebase-room-service')).createRoom(title);
+  return (await localRequest({ action: 'create', title, question: '質問を準備してください' })).room;
 }
 export async function getSavedRooms() {
   if (!cloudMode) return [];

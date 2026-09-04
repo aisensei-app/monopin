@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Copy, MapPin, Plus, Settings, Trash2 } from 'lucide-react';
 import { createRoom, deleteSavedRoom, getSavedRooms, roomUrl, cloudMode, type SavedRoom } from '@/lib/room-service';
-import { QUESTION } from '@/lib/reactions';
 import { Wordmark } from '@/components/wordmark';
 import { trackEvent } from '@/components/analytics';
 
@@ -13,7 +12,6 @@ function dateLabel(value: number) {
 
 export default function Lobby() {
   const [title,setTitle]=useState('');
-  const [question,setQuestion]=useState(QUESTION);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [recent,setRecent]=useState('');
@@ -25,10 +23,10 @@ export default function Lobby() {
   async function start(event:React.FormEvent) {
     event.preventDefault();setBusy(true);setError('');
     try{
-      const room=await createRoom(title,question);
+      const room=await createRoom(title);
       trackEvent('create_room');
       try{localStorage.setItem('monopin-last-room',room);}catch{}
-      window.location.assign(roomUrl('host',room));
+      window.location.assign(roomUrl('editor',room));
     }catch(err){setError(err instanceof Error ? err.message : '部屋を作れませんでした。接続を確認してもう一度お試しください。');setBusy(false);}
   }
   async function openHistory() {
@@ -48,7 +46,7 @@ export default function Lobby() {
   }
   function copyRoom(room:SavedRoom) {
     trackEvent('copy_saved_room');
-    setTitle(room.title);setQuestion(room.question);setSelectedRoom(null);setScreen('new');setError('');
+    setTitle(`${room.title}（コピー）`);setSelectedRoom(null);setScreen('new');setError('');
   }
   return <main className="lobby-shell">
     <header className="student-header"><Wordmark /><span className="eyebrow">{cloudMode?'Powered by AI Sensei':'手元で試す'}</span></header>
@@ -64,9 +62,8 @@ export default function Lobby() {
 
       {screen==='new' && <><button className="back-button" type="button" onClick={()=>{setScreen('start');setError('');}}><ArrowLeft size={17}/>選び直す</button>
         <form onSubmit={start}><label htmlFor="room-title">新しい部屋の名前</label><input id="room-title" value={title} onChange={e=>setTitle(e.target.value)} placeholder="例：9月のオンライン研修" maxLength={80} required disabled={busy}/>
-        <label htmlFor="room-question">最初の質問</label><textarea id="room-question" value={question} onChange={e=>setQuestion(e.target.value)} maxLength={160} required disabled={busy}/>
-        {cloudMode&&<p className="form-note">主催者はGoogleでログインします。部屋は10日間保存され、最大3件まで残せます。</p>}
-        <button className="primary-button create-room-button" disabled={busy||!title.trim()||!question.trim()}><Plus size={19}/>{busy?'部屋を準備しています…':'この内容で部屋をつくる'}<ArrowRight size={20}/></button></form></>}
+        {cloudMode&&<p className="form-note">次の画面で質問を追加します。部屋は10日間保存され、最大3件まで残せます。</p>}
+        <button className="primary-button create-room-button" disabled={busy||!title.trim()}><Plus size={19}/>{busy?'部屋を準備しています…':'部屋をつくる'}<ArrowRight size={20}/></button></form></>}
 
       {screen==='history' && <><button className="back-button" type="button" onClick={()=>{setScreen('start');setSelectedRoom(null);setError('');}}><ArrowLeft size={17}/>選び直す</button>
         <div className="room-history-heading"><strong>過去の部屋</strong><span>最大3件・作成から10日間</span></div>

@@ -74,6 +74,18 @@
           "$other": { ".validate": false }
         }
       }
+    },
+    "roomQuestions": {
+      "$room": {
+        ".read": "auth != null && root.child('rooms').child($room).child('meta/owner').val() === auth.uid",
+        ".write": "auth != null && root.child('rooms').child($room).child('meta/owner').val() === auth.uid",
+        "$question": {
+          ".validate": "$question.matches(/^[a-f0-9]{12}$/) && (!newData.exists() || newData.hasChildren(['text','order']))",
+          "text": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 160" },
+          "order": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 100" },
+          "$other": { ".validate": false }
+        }
+      }
     }
   }
 }

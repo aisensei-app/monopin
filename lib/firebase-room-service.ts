@@ -4,6 +4,8 @@ import { getDatabase, ref, set, remove, get, update, onValue, runTransaction, se
 import type { RoomAction, RoomState } from './room-service';
 
 export type SavedRoom = { id: string; title: string; question: string; createdAt: number; expiresAt: number };
+export type RoomQuestion = { id: string; text: string; order: number };
+const ROOM_PLACEHOLDER = '質問を準備してください';
 const ROOM_RETENTION_MS = 10 * 24 * 60 * 60 * 1000;
 const MAX_SAVED_ROOMS = 3;
 
@@ -51,7 +53,7 @@ export async function deleteSavedRoom(room: string) {
   const user = await identity();
   await update(ref(services().db),{[`hostRooms/${user.uid}/${room}`]:null,[`rooms/${room}`]:null});
 }
-export async function createRoom(title: string,question: string) {
+export async function createRoom(title: string) {
   await loginHost();
   const user = await identity();
   const {db} = services();
@@ -60,10 +62,29 @@ export async function createRoom(title: string,question: string) {
   const room = crypto.randomUUID().replaceAll('-','').slice(0,24);
   const createdAt = Date.now();
   await update(ref(db),{
-    [`rooms/${room}/meta`]:{owner:user.uid,title:title.trim(),question:question.trim(),revision:1,open:true,createdAt:serverTimestamp()},
-    [`hostRooms/${user.uid}/${room}`]:{title:title.trim(),question:question.trim(),createdAt,expiresAt:createdAt + ROOM_RETENTION_MS},
+    [`rooms/${room}/meta`]:{owner:user.uid,title:title.trim(),question:ROOM_PLACEHOLDER,revision:1,open:false,createdAt:serverTimestamp()},
+    [`hostRooms/${user.uid}/${room}`]:{title:title.trim(),question:ROOM_PLACEHOLDER,createdAt,expiresAt:createdAt + ROOM_RETENTION_MS},
   });
   return room;
+}
+export async function getRoomQuestions(room: string): Promise<RoomQuestion[]> {
+  await loginHost();
+  const snapshot = await get(ref(services().db,`roomQuestions/${room}`));
+  return Object.entries(snapshot.val() || {}).map(([id,value]) => ({id,...value as Omit<RoomQuestion,'id'>})).sort((a,b)=>a.order-b.order);
+}
+export async function saveRoomQuestion(room: string, question: RoomQuestion) {
+  await loginHost();
+  await set(ref(services().db,`roomQuestions/${room}/${question.id}`),{text:question.text.trim(),order:question.order});
+}
+export async function deleteRoomQuestion(room: string, id: string) {
+  await loginHost();
+  await remove(ref(services().db,`roomQuestions/${room}/${id}`));
+}
+export async function reorderRoomQuestions(room: string, questions: RoomQuestion[]) {
+  await loginHost();
+  const changes: Record<string,number>={};
+  questions.forEach((question,index)=>{changes[`roomQuestions/${room}/${question.id}/order`]=index+1;});
+  await update(ref(services().db),changes);
 }
 export async function changeRoom(room: string,action: RoomAction) {
   const user = await identity();
