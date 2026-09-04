@@ -1,0 +1,43 @@
+import {readFileSync} from 'node:fs';
+import assert from 'node:assert/strict';
+import {initializeTestEnvironment,assertSucceeds,assertFails} from '@firebase/rules-unit-testing';
+const env=await initializeTestEnvironment({projectId:'demo-monopin',database:{host:'127.0.0.1',port:9000,rules:readFileSync(new URL('../firebase/database.rules.json',import.meta.url),'utf8')}});
+try{
+ await env.clearDatabase();
+ const host=env.authenticatedContext('teacher',{firebase:{sign_in_provider:'google.com'}}).database();
+ const host2=env.authenticatedContext('teacher2',{firebase:{sign_in_provider:'google.com'}}).database();
+ const student=env.authenticatedContext('student',{firebase:{sign_in_provider:'anonymous'}}).database();
+ const stranger=env.authenticatedContext('other',{firebase:{sign_in_provider:'anonymous'}}).database();
+ const signedOut=env.unauthenticatedContext().database();
+ const room='0123456789abcdef01234567';
+ const path='rooms/'+room;
+ const meta={owner:'teacher',title:'研修会',question:'今の理解度は？',revision:1,open:true,createdAt:{'.sv':'timestamp'}};
+ await assertSucceeds(host.ref(path+'/meta').set(meta));
+ await assertFails(student.ref('rooms/aaaaaaaaaaaaaaaaaaaaaaaa/meta').set({...meta,owner:'student'}));
+ await assertSucceeds(student.ref(path+'/meta').get());
+ await assertFails(signedOut.ref(path+'/meta').get());
+ await assertFails(student.ref('rooms').get());
+ await assertFails(host2.ref(path+'/meta/question').set('改ざん'));
+ await assertFails(student.ref(path+'/meta/open').set(false));
+ await assertFails(host.ref(path+'/meta/owner').set('other'));
+ const pin={x:33.25,y:72.5,updatedAt:{'.sv':'timestamp'}};
+ await assertSucceeds(student.ref(path+'/pins/1/student').set(pin));
+ await assertFails(student.ref(path+'/pins/1/other').set(pin));
+ await assertFails(student.ref(path+'/pins/1/student').set({...pin,x:101}));
+ await assertFails(student.ref(path+'/pins/1/student').set({...pin,extra:true}));
+ await assertFails(stranger.ref(path+'/pins/1/student').get());
+ await assertFails(student.ref(path+'/pins/1').get());
+ await assertSucceeds(host.ref(path+'/pins/1').get());
+ await assertSucceeds(student.ref(path+'/pins/1/student').set({...pin,x:80}));
+ assert.equal((await host.ref(path+'/pins/1').get()).numChildren(),1);
+ await assertSucceeds(host.ref(path+'/meta/open').set(false));
+ await assertFails(student.ref(path+'/pins/1/student').set(pin));
+ await assertSucceeds(host.ref(path+'/meta/open').set(true));
+ await assertSucceeds(host.ref(path+'/meta').transaction(value=>value?{...value,revision:value.revision+1}:value));
+ await assertFails(student.ref(path+'/pins/1/student').set(pin));
+ await assertSucceeds(student.ref(path+'/pins/2/student').set(pin));
+ await assertSucceeds(host.ref(path+'/pins/1').remove());
+ assert.equal((await host.ref(path+'/pins/2').get()).numChildren(),1);
+ console.log('PASS: Firebase rules deny anonymous room creation, cross-owner control, impersonation, listing, other answers, closed/stale votes and invalid coordinates.');
+}finally{await env.cleanup();}
+

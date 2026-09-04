@@ -36,3 +36,8 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+/dist-web/
+/firebase-debug.log
+/database-debug.log
+/ui-debug.log
+/.firebase/

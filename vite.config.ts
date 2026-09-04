@@ -45,10 +45,15 @@ export default defineConfig(async () => {
   const { cloudflare } = await import('@cloudflare/vite-plugin');
 
   return {
+    define: {
+      'process.env.NEXT_PUBLIC_JOIN_ORIGIN': JSON.stringify(process.env.MONOPIN_JOIN_ORIGIN || ''),
+      'process.env.NEXT_PUBLIC_ROOM_BACKEND': JSON.stringify('local'),
+      'process.env.NEXT_PUBLIC_FIREBASE_CONFIG': JSON.stringify(''),
+    },
     css: { postcss: { plugins: [tailwindcss()] } },
     server: isCodexSeatbeltSandbox
-      ? { watch: { useFsEvents: false, usePolling: true } }
-      : undefined,
+      ? { strictPort: true, watch: { useFsEvents: false, usePolling: true } }
+      : { strictPort: true },
     plugins: [
       vinext(),
       sites(),

@@ -1,51 +1,48 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Hand } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { CheckCheck, LoaderCircle } from 'lucide-react';
+import { PinBoard } from '@/components/pin-board';
+import type { Point } from '@/lib/pinboard';
+import { useEventRoom } from '@/hooks/use-event-room';
+import { roomFromLocation } from '@/lib/room-service';
+import { QUESTION } from '@/lib/reactions';
 
 export default function JoinPage() {
-  const [room, setRoom] = useState('DEMO');
-  const [question, setQuestion] = useState('質問を読み込んでいます…');
-  const [point, setPoint] = useState<{ x: number; y: number } | null>(null);
-  const [sent, setSent] = useState(false);
-  const participant = useRef('');
+  const [room,setRoom] = useState('');
+  const { data, error, mutate } = useEventRoom(room);
+  const [pending, setPending] = useState<Point | null>(null);
+  const [notice, setNotice] = useState('');
+  const busy = useRef(false);
+  useEffect(() => {setRoom(roomFromLocation());}, []);
+  useEffect(() => { setNotice(''); }, [data?.revision]);
+  async function vote(point: Point) {
+    if (busy.current || !data || !room) return;
 
-  const refresh = useCallback(async (code: string) => {
-    const response = await fetch(`/api/room?room=${code}`, { cache: 'no-store' });
-    if (response.ok) setQuestion((await response.json()).room.question);
-  }, []);
-
-  useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get('room') || 'DEMO';
-    setRoom(code);
-    participant.current = localStorage.getItem('pinboard-participant') || crypto.randomUUID();
-    localStorage.setItem('pinboard-participant', participant.current);
-    refresh(code);
-    const timer = window.setInterval(() => refresh(code), 1200);
-    return () => window.clearInterval(timer);
-  }, [refresh]);
-
-  async function placePin(event: React.PointerEvent<HTMLButtonElement>) {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const next = { x: ((event.clientX - rect.left) / rect.width) * 100, y: ((event.clientY - rect.top) / rect.height) * 100 };
-    setPoint(next); setSent(false);
-    const response = await fetch('/api/room', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'pin', room, participantId: participant.current, ...next }) });
-    if (response.ok) setSent(true);
+    busy.current = true;
+    setPending(point); setNotice('');
+    try { await mutate({ action: 'vote', ...point, revision: data.revision }); }
+    catch (err) { setNotice(err instanceof Error && err.message !== 'Failed to fetch' ? err.message : '送信できませんでした。もう一度お試しください。'); }
+    finally { busy.current = false; setPending(null); }
   }
-
+  const selected = data?.selected ?? null;
+  if (!room) return <main className="student-shell"><section className="student-card"><h1>参加用URLからお入りください</h1><p>主催者から届いたQRコードか、チャットに貼られた参加URLを開いてください。</p></section></main>;
   return (
-    <main className="min-h-[100dvh] bg-[linear-gradient(160deg,#f5f3ff,#e0f2fe)] p-4 text-slate-900">
-      <div className="mx-auto flex min-h-[calc(100dvh-2rem)] max-w-lg flex-col rounded-[2rem] bg-white p-5 shadow-2xl shadow-violet-200/50">
-        <header className="flex items-center justify-between"><div><p className="text-xs font-bold tracking-[.16em] text-violet-600">PINBOARD</p><p className="text-sm text-slate-400">ルーム {room}</p></div><span className="size-3 animate-pulse rounded-full bg-emerald-400" /></header>
-        <section className="py-7"><p className="text-sm font-bold text-slate-400">質問</p><h1 className="mt-2 text-2xl font-black leading-snug">{question}</h1></section>
-        <button onPointerDown={placePin} aria-label="回答する位置をタップ" className="relative min-h-[360px] flex-1 touch-none overflow-hidden rounded-[1.6rem] border-2 border-slate-200 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:28px_28px] text-left">
-          <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-slate-300" /><div className="absolute inset-y-0 left-1/2 border-l border-dashed border-slate-300" />
-          <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-slate-500">まだ分からない</span><span className="absolute right-3 top-3 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-slate-500">よく分かった</span>
-          {!point && <span className="absolute inset-0 grid place-items-center text-center font-bold text-slate-400"><span><Hand className="mx-auto mb-2 size-8" />あなたの位置をタップ</span></span>}
-          {point && <span className="pin-pop absolute size-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white bg-violet-600 shadow-xl shadow-violet-300" style={{ left: `${point.x}%`, top: `${point.y}%` }} />}
-        </button>
-        <p className={`mt-5 flex h-8 items-center justify-center gap-2 font-bold transition ${sent ? 'text-emerald-600' : 'text-slate-400'}`}>{sent ? <><Check className="size-5" />スクリーンに送信しました</> : 'タップするとすぐ送信されます'}</p>
-      </div>
+    <main className="student-shell">
+      <header className="student-header"><a className="wordmark" href={typeof window === 'undefined' ? '#' : window.location.href}>mono<span>pin</span><span className="brand-dot" /></a><span className="eyebrow">{data?.open === false ? '受付終了' : '参加者の画面'}</span></header>
+      <section className="student-card" aria-labelledby="question">
+        <div className="question-index"><span>01</span> {data?.title || 'ピンで回答'}</div>
+        <h1 id="question">{data?.question || QUESTION}</h1>
+        <p className="student-instruction">今の気持ちに近い場所をタップ。表情の間もOK。</p>
+        <PinBoard own={selected} pending={pending} onPlace={vote} disabled={pending !== null || !data || !room || !data.open || !!error} />
+        <div className={`answer-status ${selected !== null ? 'is-sent' : ''}`} role="status" aria-live="polite">
+          {pending !== null ? <><LoaderCircle className="spinning" size={22} />ピンを送っています…</> : error || notice ? <span>{notice || error}</span> : !data ? <><LoaderCircle className="spinning" size={22} />質問に接続しています…</> : data?.open === false ? '受付は終了しました。ご参加ありがとうございました。' : selected !== null ? <><CheckCheck size={24} />ピンを置きました</> : 'ボードの好きな場所をタップしてください'}
+        </div>
+        <p className="answer-hint">{selected !== null ? '別の場所をタップすると、ピンが移動します。' : '表情は目印です。真ん中や端にも置けます。'}</p>
+      </section>
+      <footer className="student-footer">名前の入力は不要です。先生の画面には、みんなのピンが表示されます。</footer>
     </main>
   );
 }
+
+

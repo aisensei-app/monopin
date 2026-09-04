@@ -11,7 +11,10 @@
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint",
     "format": "oxfmt",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "build:pages": "vite build --config vite.pages.config.ts",
+    "test:sessions": "node tests/sessions.mjs",
+    "test:firebase": "npx --yes firebase-tools@15.29.0 emulators:exec --only database --project demo-monopin \"node tests/firebase-rules.mjs\""
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",
@@ -22,6 +25,7 @@
     "date-fns": "4.1.0",
     "drizzle-orm": "0.45.2",
     "embla-carousel-react": "8.5.2",
+    "firebase": "^12.18.0",
     "input-otp": "1.4.2",
     "lucide-react": "1.31.0",
     "qrcode.react": "^4.2.0",
@@ -39,6 +43,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.37.1",
     "@cloudflare/workers-types": "4.20260515.1",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@openai/sites-vite-plugin": "0.2.0",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",

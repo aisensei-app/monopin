@@ -1,65 +1,77 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { Eraser, Sparkles, Users } from 'lucide-react';
-
-type Pin = { id: number; x: number; y: number };
+import { ArrowUpRight, RotateCcw, Users, Maximize, Minimize, Pencil, Copy, Check } from 'lucide-react';
+import { PinBoard } from '@/components/pin-board';
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
+import { QUESTION } from '@/lib/reactions';
+import { useEventRoom } from '@/hooks/use-event-room';
+import { roomFromLocation, roomUrl, cloudMode, loginHost } from '@/lib/room-service';
 
 export default function HostPage() {
-  const room = 'DEMO';
-  const [question, setQuestion] = useState('今の理解度はどのくらいですか？');
-  const [draft, setDraft] = useState(question);
-  const [pins, setPins] = useState<Pin[]>([]);
+  const [room,setRoom] = useState('');
+  const { data, error, mutate, mutating } = useEventRoom(room);
+  const [homeUrl,setHomeUrl] = useState('/');
   const [joinUrl, setJoinUrl] = useState('');
-
-  const refresh = useCallback(async () => {
-    const response = await fetch(`/api/room?room=${room}`, { cache: 'no-store' });
-    if (!response.ok) return;
-    const data = await response.json();
-    setQuestion(data.room.question);
-    setPins(data.pins);
-  }, []);
-
+  const [localOnly, setLocalOnly] = useState(true);
+  const [confirm, setConfirm] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(QUESTION);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [copied, setCopied] = useState(false);
   useEffect(() => {
-    setJoinUrl(`${window.location.origin}/join?room=${room}`);
-    refresh();
-    const timer = window.setInterval(refresh, 700);
-    return () => window.clearInterval(timer);
-  }, [refresh]);
-
-  async function saveQuestion(event: React.FormEvent) {
-    event.preventDefault();
-    await fetch('/api/room', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'question', room, question: draft }) });
-    refresh();
+    const code = roomFromLocation();
+    setRoom(code);
+    setHomeUrl(roomUrl('home'));
+    setJoinUrl(roomUrl('join',code,true));
+    setLocalOnly(!cloudMode);
+    const update = () => setFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', update);
+  return () => document.removeEventListener('fullscreenchange', update);
+  }, []);
+  const total = data?.pins.length || 0;
+  async function update(action: 'reset' | 'question' | 'open') {
+    setBusy(true); setMessage('');
+    try { await mutate({ action, question: draft, open: !data?.open }); setConfirm(false); setEditing(false); }
+    catch { setMessage('更新できませんでした。接続を確認して、もう一度お試しください。'); }
+    finally { setBusy(false); }
   }
-
-  async function clearPins() {
-    await fetch('/api/room', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'clear', room }) });
-    refresh();
+  async function toggleFullscreen() {
+    try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); }
+    catch { setMessage('この画面では全画面表示に対応していません。ブラウザーの全画面機能をご利用ください。'); }
   }
-
+  async function copyLink() {
+    try { await navigator.clipboard.writeText(joinUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }
+    catch { setMessage('参加用URLを選択してコピーしてください。'); }
+  }
+    if (!room) return <main className="student-shell"><p>主催者用URLから開くか、新しい部屋を作成してください。</p><a className="preview-link" href={homeUrl}>部屋をつくる</a></main>;
+  if (data && !data.isHost) return <main className="student-shell"><section className="student-card"><h1>主催者専用の画面です</h1><p>この部屋を作成したブラウザー・アカウントで開いてください。</p>{cloudMode && <button className="primary-button" onClick={async()=>{try{await loginHost();window.location.reload();}catch{setMessage('ログインできませんでした。もう一度お試しください。');}}}>主催者としてGoogleでログイン</button>}<p role="status">{message}</p><a className="preview-link" href={roomUrl('join',room)}>参加者として開く</a><a className="text-button" href={homeUrl}>別の部屋を作成する</a></section></main>;
   return (
-    <main className="min-h-screen bg-slate-950 p-5 text-white sm:p-8">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1500px] gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
-        <section className="flex min-h-[650px] flex-col rounded-[2rem] bg-white p-6 text-slate-900 sm:p-10">
-          <div className="flex flex-wrap items-start justify-between gap-5">
-            <div><p className="mb-2 flex items-center gap-2 text-sm font-bold text-violet-600"><Sparkles className="size-4" /> LIVE QUESTION</p><h1 className="max-w-4xl text-3xl font-black leading-tight sm:text-5xl">{question}</h1></div>
-            <span className="flex items-center gap-2 rounded-full bg-violet-50 px-5 py-3 font-bold text-violet-700"><Users className="size-5" /> {pins.length}人</span>
-          </div>
-          <div className="relative mt-8 flex-1 overflow-hidden rounded-[1.6rem] border-2 border-slate-200 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:32px_32px]">
-            <div className="absolute inset-x-0 top-1/2 border-t-2 border-dashed border-slate-300" /><div className="absolute inset-y-0 left-1/2 border-l-2 border-dashed border-slate-300" />
-            <span className="absolute left-5 top-4 rounded-full bg-white/90 px-3 py-1 text-sm font-bold text-slate-500">まだよく分からない</span><span className="absolute right-5 top-4 rounded-full bg-white/90 px-3 py-1 text-sm font-bold text-slate-500">よく分かった</span>
-            {pins.map((pin, index) => <span key={pin.id} className="pin-pop absolute grid size-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-4 border-white bg-violet-600 text-xs font-black text-white shadow-lg" style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>{index + 1}</span>)}
-            {pins.length === 0 && <div className="absolute inset-0 grid place-items-center text-center text-slate-400"><p><span className="block text-xl font-bold text-slate-600">参加者のタップを待っています</span>ピンがここにリアルタイムで表示されます</p></div>}
-          </div>
+    <main className="host-shell">
+      <header className="host-header"><a href={homeUrl} className="wordmark">mono<span>pin</span><span className="brand-dot" /></a><span className="header-divider" /><span className="eyebrow">{data?.title || 'みんなのピンボード'}</span><div className="header-actions"><span className={`connection ${error ? 'offline' : ''}`}><span />{error ? '接続を確認中' : data ? data.open ? '回答受付中' : '受付終了' : '接続中'}</span><button className="icon-button" onClick={toggleFullscreen} aria-label={fullscreen ? '全画面表示を終了' : '全画面で表示'}>{fullscreen ? <Minimize size={20} /> : <Maximize size={20} />}</button></div></header>
+      <div className="host-layout">
+        <section className="results-panel" aria-labelledby="host-question">
+          <div className="question-topline"><div className="question-index"><span>01</span> みんなのピン</div><span className="anonymous-label">匿名で回答</span></div>
+          <h1 id="host-question">{data?.question || QUESTION}</h1>
+          <div className="results-heading"><p>今の気持ちに近い「場所」に、ピンを。</p><div className="total"><Users size={21} /><strong>{total}</strong><span>人が回答</span></div></div>
+          <div className="host-board-wrap"><PinBoard pins={data?.pins || []} /></div>
+          <div className="results-footnote" role="status">{error || message || (total ? '表情の間にも置けます。ピンが重なる場所ほど、色が濃くなります。' : 'まだピンはありません。QRコードから参加して、好きな場所をタップ。')}</div>
         </section>
-        <aside className="flex flex-col gap-5">
-          <div className="rounded-[2rem] bg-white p-6 text-center text-slate-900"><p className="text-sm font-bold text-violet-600">スマホで参加</p><div className="mx-auto my-5 w-fit rounded-2xl border-8 border-violet-50 bg-white p-2">{joinUrl && <QRCodeSVG value={joinUrl} size={190} level="M" />}</div><p className="text-sm text-slate-500">ルームコード</p><p className="text-3xl font-black tracking-[.2em]">{room}</p></div>
-          <form onSubmit={saveQuestion} className="rounded-[2rem] bg-slate-900 p-6 ring-1 ring-white/10"><label className="text-sm font-bold text-slate-300">質問を変更</label><textarea value={draft} onChange={(e) => setDraft(e.target.value)} className="mt-3 min-h-24 w-full resize-none rounded-xl border border-slate-700 bg-slate-800 p-3 outline-none focus:border-violet-400" /><button className="mt-3 w-full rounded-xl bg-violet-600 px-4 py-3 font-bold transition hover:bg-violet-500">質問を表示</button></form>
-          <button onClick={clearPins} className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 px-4 py-3 font-bold text-slate-300 hover:bg-slate-900"><Eraser className="size-4" /> ピンをリセット</button>
+        <aside className="participation-panel">
+          <div className="join-card"><span className="eyebrow">スマホで参加</span><h2>読み取って、<br />気持ちを教えてください。</h2><div className="qr-frame">{joinUrl && <QRCodeSVG value={joinUrl} size={208} level="M" fgColor="#254854" />}</div><p>カメラでQRコードを読み取るだけ。<br />名前の入力は必要ありません。</p><div className="join-link"><span>{joinUrl || '接続準備中…'}</span><button onClick={copyLink} disabled={!joinUrl} aria-label="参加用URLをコピー">{copied ? <Check size={18} /> : <Copy size={18} />}</button></div><span className="network-note">{localOnly ? 'お試し中：このPCと同じWi-Fiで参加できます。' : '離れた場所からも、このURLで参加できます。'}</span></div>
+          <a className="preview-link" href={roomUrl('join',room)} target="_blank" rel="noopener noreferrer"><span>このPCで回答を試す</span><ArrowUpRight size={21} /></a>
+          <p className="preview-note">別タブで学生の画面が開きます</p>
         </aside>
       </div>
+      <div className="room-controls"><a className="text-button" href={homeUrl}>別の部屋をつくる</a><button className="primary-button" disabled={!data || busy || mutating} onClick={()=>update('open')}>{data?.open ? '受付を終了する' : '受付を再開する'}</button></div><footer className="host-footer"><span>{cloudMode ? 'ピンはリアルタイムで共有されます' : 'ピンは約1秒ごとに更新されます'}</span><div><button className="text-button" onClick={() => { setDraft(data?.question || QUESTION); setEditing(!editing); }} disabled={busy || !data}><Pencil size={16} />質問を編集</button><button className="text-button" onClick={() => setConfirm(true)} disabled={busy || !data || !total}><RotateCcw size={16} />回答をリセット</button></div></footer>
+      {editing && <form className="question-editor" onSubmit={(e) => { e.preventDefault(); update('question'); }}><label htmlFor="question-draft">質問文</label><textarea id="question-draft" value={draft} maxLength={160} onChange={(e) => setDraft(e.target.value)} /><p>質問を変更すると、現在の回答はリセットされます。</p><div><button type="button" className="text-button" disabled={busy} onClick={() => setEditing(false)}>キャンセル</button><button className="primary-button" disabled={busy || !draft.trim()}>{busy ? '更新中…' : '質問を更新'}</button></div></form>}
+      <AlertDialog open={confirm} onOpenChange={(open) => { if (!busy) setConfirm(open); }}><AlertDialogContent><AlertDialogTitle>回答をリセットしますか？</AlertDialogTitle><AlertDialogDescription>今の{total}人分の回答を消して、同じ質問にもう一度回答できるようにします。</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel disabled={busy}>キャンセル</AlertDialogCancel><AlertDialogAction disabled={busy} onClick={() => update('reset')}>{busy ? 'リセット中…' : 'リセットする'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </main>
   );
 }
+
+
+

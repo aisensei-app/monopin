@@ -1,0 +1,64 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "rooms": {
+      "$room": {
+        ".read": "auth != null && root.child('rooms').child($room).child('meta/owner').val() === auth.uid",
+        ".validate": "$room.matches(/^[a-f0-9]{24}$/) && newData.hasChildren(['meta'])",
+        "meta": {
+          ".read": "auth != null",
+          ".write": "auth != null && newData.exists() && ((!data.exists() && auth.token.firebase.sign_in_provider === 'google.com' && newData.child('owner').val() === auth.uid) || (data.child('owner').val() === auth.uid && newData.child('owner').val() === data.child('owner').val()))",
+          ".validate": "newData.hasChildren(['owner','title','question','revision','open','createdAt'])",
+          "owner": {
+            ".validate": "newData.isString() && newData.val() === auth.uid"
+          },
+          "title": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80"
+          },
+          "question": {
+            ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 160"
+          },
+          "revision": {
+            ".validate": "newData.isNumber() && ((!data.exists() && newData.val() === 1) || (data.exists() && (newData.val() === data.val() || newData.val() === data.val() + 1)))"
+          },
+          "open": {
+            ".validate": "newData.isBoolean()"
+          },
+          "createdAt": {
+            ".validate": "newData.isNumber() && ((!data.exists() && newData.val() <= now) || newData.val() === data.val())"
+          },
+          "$other": {
+            ".validate": false
+          }
+        },
+        "pins": {
+          "$revision": {
+            ".read": "auth != null && root.child('rooms').child($room).child('meta/owner').val() === auth.uid",
+            ".write": "auth != null && root.child('rooms').child($room).child('meta/owner').val() === auth.uid && !newData.exists()",
+            "$uid": {
+              ".read": "auth != null && auth.uid === $uid",
+              ".write": "auth != null && auth.uid === $uid && newData.exists() && root.child('rooms').child($room).child('meta/open').val() === true && $revision === root.child('rooms').child($room).child('meta/revision').val() + ''",
+              ".validate": "newData.hasChildren(['x','y','updatedAt'])",
+              "x": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+              },
+              "y": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+              },
+              "updatedAt": {
+                ".validate": "newData.isNumber() && newData.val() <= now && newData.val() >= now - 15000"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    }
+  }
+}
