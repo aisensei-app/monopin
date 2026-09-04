@@ -1,7 +1,11 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, signInAnonymously, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { getDatabase, ref, set, remove, onValue, runTransaction, serverTimestamp } from 'firebase/database';
+import { getDatabase, ref, set, remove, get, update, onValue, runTransaction, serverTimestamp } from 'firebase/database';
 import type { RoomAction, RoomState } from './room-service';
+
+export type SavedRoom = { id: string; title: string; question: string; createdAt: number; expiresAt: number };
+const ROOM_RETENTION_MS = 10 * 24 * 60 * 60 * 1000;
+const MAX_SAVED_ROOMS = 3;
 
 const raw = process.env.NEXT_PUBLIC_FIREBASE_CONFIG || '';
 function services() {
@@ -24,12 +28,41 @@ export async function loginHost() {
   await auth.authStateReady();
   if (!auth.currentUser || auth.currentUser.isAnonymous) await signInWithPopup(auth,new GoogleAuthProvider());
 }
+async function cleanSavedRooms(uid: string) {
+  const {db} = services();
+  const snapshot = await get(ref(db,`hostRooms/${uid}`));
+  const now = Date.now();
+  const all = Object.entries(snapshot.val() || {}).map(([id,value]) => ({id,...value as Omit<SavedRoom,'id'>}));
+  const expired = all.filter(room => !room.expiresAt || room.expiresAt <= now);
+  if (expired.length) {
+    const changes: Record<string,null> = {};
+    for (const room of expired) { changes[`hostRooms/${uid}/${room.id}`] = null; changes[`rooms/${room.id}`] = null; }
+    await update(ref(db),changes);
+  }
+  return all.filter(room => room.expiresAt > now).sort((a,b) => b.createdAt - a.createdAt);
+}
+export async function getSavedRooms(): Promise<SavedRoom[]> {
+  await loginHost();
+  const user = await identity();
+  return cleanSavedRooms(user.uid);
+}
+export async function deleteSavedRoom(room: string) {
+  await loginHost();
+  const user = await identity();
+  await update(ref(services().db),{[`hostRooms/${user.uid}/${room}`]:null,[`rooms/${room}`]:null});
+}
 export async function createRoom(title: string,question: string) {
   await loginHost();
   const user = await identity();
   const {db} = services();
+  const savedRooms = await cleanSavedRooms(user.uid);
+  if (savedRooms.length >= MAX_SAVED_ROOMS) throw new Error('保存できる部屋は3件までです。不要な部屋を削除してから作成してください。');
   const room = crypto.randomUUID().replaceAll('-','').slice(0,24);
-  await set(ref(db,'rooms/'+room+'/meta'),{owner:user.uid,title:title.trim(),question:question.trim(),revision:1,open:true,createdAt:serverTimestamp()});
+  const createdAt = Date.now();
+  await update(ref(db),{
+    [`rooms/${room}/meta`]:{owner:user.uid,title:title.trim(),question:question.trim(),revision:1,open:true,createdAt:serverTimestamp()},
+    [`hostRooms/${user.uid}/${room}`]:{title:title.trim(),question:question.trim(),createdAt,expiresAt:createdAt + ROOM_RETENTION_MS},
+  });
   return room;
 }
 export async function changeRoom(room: string,action: RoomAction) {

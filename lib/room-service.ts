@@ -1,6 +1,7 @@
 import type { PinState } from './pinboard';
 export type RoomState = PinState & { title: string; open: boolean; isHost: boolean };
 export type RoomAction = { action: 'vote' | 'reset' | 'question' | 'open'; x?: number; y?: number; question?: string; open?: boolean; revision?: number };
+export type { SavedRoom } from './firebase-room-service';
 export const cloudMode = process.env.NEXT_PUBLIC_ROOM_BACKEND === 'firebase';
 
 export function roomUrl(view: 'home' | 'host' | 'join', room = '', forSharing = false) {
@@ -31,6 +32,14 @@ export async function loginHost() {
 export async function createRoom(title: string, question: string): Promise<string> {
   if (cloudMode) return (await import('./firebase-room-service')).createRoom(title,question);
   return (await localRequest({ action: 'create', title, question })).room;
+}
+export async function getSavedRooms() {
+  if (!cloudMode) return [];
+  return (await import('./firebase-room-service')).getSavedRooms();
+}
+export async function deleteSavedRoom(room: string) {
+  if (!cloudMode) return;
+  await (await import('./firebase-room-service')).deleteSavedRoom(room);
 }
 export async function changeRoom(room: string, action: RoomAction) {
   if (cloudMode) return (await import('./firebase-room-service')).changeRoom(room,action);

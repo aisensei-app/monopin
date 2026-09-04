@@ -38,6 +38,12 @@ try{
  await assertSucceeds(student.ref(path+'/pins/2/student').set(pin));
  await assertSucceeds(host.ref(path+'/pins/1').remove());
  assert.equal((await host.ref(path+'/pins/2').get()).numChildren(),1);
- console.log('PASS: Firebase rules deny anonymous room creation, cross-owner control, impersonation, listing, other answers, closed/stale votes and invalid coordinates.');
+ const history={title:'研修会',question:'今の理解度は？',createdAt:Date.now()-1000,expiresAt:Date.now()+86400000};
+ await assertSucceeds(host.ref('hostRooms/teacher/'+room).set(history));
+ await assertSucceeds(host.ref('hostRooms/teacher').get());
+ await assertFails(host2.ref('hostRooms/teacher').get());
+ await assertFails(host2.ref('hostRooms/teacher/'+room).set(history));
+ await assertSucceeds(host.ref(path).remove());
+ console.log('PASS: Firebase rules deny anonymous room creation, cross-owner control, impersonation, listing, other answers, closed/stale votes, invalid coordinates, and private room history access.');
 }finally{await env.cleanup();}
 
