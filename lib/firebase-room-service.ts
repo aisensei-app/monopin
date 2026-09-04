@@ -5,7 +5,7 @@ import type { RoomAction, RoomState } from './room-service';
 
 export type SavedRoom = { id: string; title: string; question: string; createdAt: number; expiresAt: number };
 export type QuestionTemplate = 'mood' | 'world' | 'japan' | 'matrix' | 'free' | 'image';
-export type RoomQuestion = { id: string; text: string; order: number; template?: QuestionTemplate; caption?: string; imageUrl?: string };
+export type RoomQuestion = { id: string; text: string; order: number; template?: QuestionTemplate; caption?: string; imageUrl?: string; layout?: string };
 const ROOM_PLACEHOLDER = '質問を準備してください';
 const ROOM_RETENTION_MS = 10 * 24 * 60 * 60 * 1000;
 const MAX_SAVED_ROOMS = 3;
@@ -75,7 +75,7 @@ export async function getRoomQuestions(room: string): Promise<RoomQuestion[]> {
 }
 export async function saveRoomQuestion(room: string, question: RoomQuestion) {
   await loginHost();
-  await set(ref(services().db,`roomQuestions/${room}/${question.id}`),{text:question.text.trim(),order:question.order,template:question.template || 'mood',caption:question.caption?.trim() || '',imageUrl:question.imageUrl || ''});
+  await set(ref(services().db,`roomQuestions/${room}/${question.id}`),{text:question.text.trim(),order:question.order,template:question.template || 'mood',caption:question.caption?.trim() || '',imageUrl:question.imageUrl || '',layout:question.layout || ''});
 }
 export async function deleteRoomQuestion(room: string, id: string) {
   await loginHost();
