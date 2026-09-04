@@ -21,7 +21,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - run: npm ci
+      - run: npm install
       - run: npx tsc --noEmit --incremental false
       - run: node tests/room-urls.mjs
       - run: npm run test:firebase
