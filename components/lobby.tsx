@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, ArrowRight, Copy, MapPin, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Copy, MapPin, Plus, Settings, Trash2 } from 'lucide-react';
 import { createRoom, deleteSavedRoom, getSavedRooms, roomUrl, cloudMode, type SavedRoom } from '@/lib/room-service';
 import { QUESTION } from '@/lib/reactions';
 import { Wordmark } from '@/components/wordmark';
@@ -51,7 +51,7 @@ export default function Lobby() {
     setTitle(room.title);setQuestion(room.question);setSelectedRoom(null);setScreen('new');setError('');
   }
   return <main className="lobby-shell">
-    <header className="student-header"><Wordmark /><span className="eyebrow">{cloudMode?'オンラインでつながる':'手元で試す'}</span></header>
+    <header className="student-header"><Wordmark /><span className="eyebrow">{cloudMode?'Powered by AI Sensei':'手元で試す'}</span></header>
     <section className="lobby-card">
       <div className="lobby-icon"><MapPin size={28}/></div>
       <h1>みんなが集まる<br/>部屋をつくりましょう。</h1>
@@ -63,7 +63,7 @@ export default function Lobby() {
       </div>}
 
       {screen==='new' && <><button className="back-button" type="button" onClick={()=>{setScreen('start');setError('');}}><ArrowLeft size={17}/>選び直す</button>
-        <form onSubmit={start}><label htmlFor="room-title">授業・研修会の名前</label><input id="room-title" value={title} onChange={e=>setTitle(e.target.value)} placeholder="例：9月のオンライン研修" maxLength={80} required disabled={busy}/>
+        <form onSubmit={start}><label htmlFor="room-title">新しい部屋の名前</label><input id="room-title" value={title} onChange={e=>setTitle(e.target.value)} placeholder="例：9月のオンライン研修" maxLength={80} required disabled={busy}/>
         <label htmlFor="room-question">最初の質問</label><textarea id="room-question" value={question} onChange={e=>setQuestion(e.target.value)} maxLength={160} required disabled={busy}/>
         {cloudMode&&<p className="form-note">主催者はGoogleでログインします。部屋は10日間保存され、最大3件まで残せます。</p>}
         <button className="primary-button create-room-button" disabled={busy||!title.trim()||!question.trim()}><Plus size={19}/>{busy?'部屋を準備しています…':'この内容で部屋をつくる'}<ArrowRight size={20}/></button></form></>}
@@ -72,9 +72,13 @@ export default function Lobby() {
         <div className="room-history-heading"><strong>過去の部屋</strong><span>最大3件・作成から10日間</span></div>
         {loadingRooms ? <p className="history-message">過去の部屋を読み込んでいます…</p> : savedRooms.length===0 ? <p className="history-message">保存されている部屋はありません。新しい部屋をつくると、ここから再利用できます。</p> : <div className="room-history-list">{savedRooms.map(room=><article className={`room-history-item ${selectedRoom?.id===room.id?'is-selected':''}`} key={room.id}>
           <button className="room-history-main" type="button" onClick={()=>setSelectedRoom(room)}><strong>{room.title}</strong><span>{room.question}</span><small>{dateLabel(room.createdAt)} 作成</small></button>
-          <button className="room-delete-button" type="button" disabled={busy} onClick={()=>removeRoom(room)} aria-label={`「${room.title}」を削除`}><Trash2 size={18}/></button>
+          {selectedRoom?.id===room.id&&<div className="room-history-actions" aria-label={`「${room.title}」の操作`}>
+            <a className="room-action-button" href={roomUrl('host',room.id)} onClick={()=>trackEvent('open_saved_room')} aria-label={`「${room.title}」の設定を開く`} title="設定"><Settings size={18}/></a>
+            <button className="room-action-button" type="button" onClick={()=>copyRoom(room)} aria-label={`「${room.title}」をコピーして使う`} title="コピー"><Copy size={18}/></button>
+            <button className="room-action-button is-delete" type="button" disabled={busy} onClick={()=>removeRoom(room)} aria-label={`「${room.title}」を削除`} title="削除"><Trash2 size={18}/></button>
+          </div>}
         </article>)}</div>}
-        {selectedRoom&&<div className="room-reuse-actions"><p>「{selectedRoom.title}」を選択中</p><a className="secondary-button" href={roomUrl('host',selectedRoom.id)} onClick={()=>trackEvent('open_saved_room')}><MapPin size={18}/>この部屋を開く</a><button className="primary-button" type="button" onClick={()=>copyRoom(selectedRoom)}><Copy size={18}/>コピーして使う</button></div>}</>}
+        </>}
       <div role="status" className="form-error">{error}</div>
       {screen==='start'&&recent&&<button className="text-button" onClick={()=>window.location.assign(roomUrl('host',recent))}>前回の主催者画面に戻る <ArrowRight size={16}/></button>}
     </section>
