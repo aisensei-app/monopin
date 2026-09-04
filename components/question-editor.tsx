@@ -11,6 +11,7 @@ import {
   Plus,
   Trash2,
   MessageCirclePlus,
+  Volume2,
   X,
 } from 'lucide-react';
 import { Wordmark } from '@/components/wordmark';
@@ -37,6 +38,8 @@ import {
   type DrawingStroke,
   type MapBubble,
 } from '@/components/template-preview';
+import { playPinSound } from '@/lib/pin-sound';
+import { AccountMenu } from '@/components/account-menu';
 
 const templates: { id: QuestionTemplate; name: string; hint: string }[] = [
   { id: 'mood', name: '気分', hint: '4つの表情' },
@@ -65,6 +68,7 @@ export default function QuestionEditor() {
   const [drawing, setDrawing] = useState<DrawingStroke[]>([]);
   const [drawingColor, setDrawingColor] = useState('#276877');
   const [drawingWidth, setDrawingWidth] = useState(4);
+  const [soundEnabled, setSoundEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   useEffect(() => {
@@ -113,6 +117,7 @@ export default function QuestionEditor() {
         caption: '',
         imageUrl,
         layout: currentLayout(),
+        soundEnabled,
       });
       setDraft('');
       setEditing(null);
@@ -165,6 +170,7 @@ export default function QuestionEditor() {
     setTemplate(questionTemplate);
     setTemplateSelected(!!question);
     setImageUrl(question?.imageUrl || '');
+    setSoundEnabled(question?.soundEnabled === true);
     try {
       setMoodPoints(
         questionTemplate === 'mood' && question?.layout
@@ -197,7 +203,7 @@ export default function QuestionEditor() {
     <main className="editor-shell">
       <header className="student-header">
         <Wordmark href={roomUrl('home')} />
-        <span className="eyebrow">Powered by AI Sensei</span>
+        <div className="student-header-actions"><span className="eyebrow">Powered by AI Sensei</span><AccountMenu /></div>
       </header>
       <section className="editor-card">
         <a className="back-button" href={roomUrl('home')}>
@@ -219,7 +225,7 @@ export default function QuestionEditor() {
           <section className="composer">
             <div className="composer-topline">
               <div className="composer-tabs" role="tablist">
-                {(['質問', '画面', '整える'] as const).map((name, index) => (
+                {(['質問', '画面', '詳細'] as const).map((name, index) => (
                   <button
                     type="button"
                     role="tab"
@@ -300,23 +306,6 @@ export default function QuestionEditor() {
             )}
             {step === 3 && (
               <>
-                <TemplatePreview
-                  template={template}
-                  moodPoints={moodPoints}
-                  bubbles={mapBubbles}
-                  drawing={drawing}
-                  editable={
-                    template === 'world' ||
-                    template === 'japan' ||
-                    template === 'free'
-                  }
-                  onBubblesChange={setMapBubbles}
-                  onDrawingChange={setDrawing}
-                  drawingColor={drawingColor}
-                  drawingWidth={drawingWidth}
-                  preview
-                  interactivePreview
-                />
                 {template === 'mood' && (
                   <MoodConfigurator
                     points={moodPoints}
@@ -415,6 +404,31 @@ export default function QuestionEditor() {
                     </button>
                   </section>
                 )}
+                <section className="sound-setting" aria-label="ピンの効果音">
+                  <strong>ピンを置いたときの音</strong>
+                  <div>
+                    <label><input type="radio" name="pin-sound" checked={!soundEnabled} onChange={() => setSoundEnabled(false)} />なし</label>
+                    <label><input type="radio" name="pin-sound" checked={soundEnabled} onChange={() => setSoundEnabled(true)} />あり</label>
+                    <button type="button" className="secondary-button" disabled={!soundEnabled} onClick={playPinSound}><Volume2 size={17} />音を試す</button>
+                  </div>
+                </section>
+                <TemplatePreview
+                  template={template}
+                  moodPoints={moodPoints}
+                  bubbles={mapBubbles}
+                  drawing={drawing}
+                  editable={
+                    template === 'world' ||
+                    template === 'japan' ||
+                    template === 'free'
+                  }
+                  onBubblesChange={setMapBubbles}
+                  onDrawingChange={setDrawing}
+                  drawingColor={drawingColor}
+                  drawingWidth={drawingWidth}
+                  preview
+                  interactivePreview
+                />
               </>
             )}
             <div className="composer-actions">

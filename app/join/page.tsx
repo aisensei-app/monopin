@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { CheckCheck, LoaderCircle } from 'lucide-react';
+import { CheckCheck, LoaderCircle, Volume2, VolumeX } from 'lucide-react';
 import { PinBoard } from '@/components/pin-board';
 import { Wordmark } from '@/components/wordmark';
 import type { Point } from '@/lib/pinboard';
@@ -11,21 +11,26 @@ import { QUESTION } from '@/lib/reactions';
 import { trackEvent } from '@/components/analytics';
 import { defaultMoodPoints, type MoodPoint } from '@/components/mood-configurator';
 import type { QuestionTemplate } from '@/lib/firebase-room-service';
+import { playPinSound } from '@/lib/pin-sound';
 
 export default function JoinPage() {
   const [room,setRoom] = useState('');
   const { data, error, mutate } = useEventRoom(room);
   const [pending, setPending] = useState<Point | null>(null);
   const [notice, setNotice] = useState('');
+  const [muted, setMuted] = useState(false);
   const busy = useRef(false);
+  const lastVote = useRef(0);
   useEffect(() => {const code=roomFromLocation();setRoom(code);if(code)trackEvent('join_room');}, []);
   useEffect(() => { setNotice(''); }, [data?.revision]);
   async function vote(point: Point) {
-    if (busy.current || !data || !room) return;
+    const now = Date.now();
+    if (busy.current || now - lastVote.current < 500 || !data || !room) return;
 
+    lastVote.current = now;
     busy.current = true;
     setPending(point); setNotice('');
-    try { await mutate({ action: 'vote', ...point, revision: data.revision }); trackEvent('place_pin'); }
+    try { await mutate({ action: 'vote', ...point, revision: data.revision }); if (data.soundEnabled && !muted) playPinSound(); trackEvent('place_pin'); }
     catch (err) { setNotice(err instanceof Error && err.message !== 'Failed to fetch' ? err.message : '送信できませんでした。もう一度お試しください。'); }
     finally { busy.current = false; setPending(null); }
   }
@@ -35,7 +40,7 @@ export default function JoinPage() {
   if (!room) return <main className="student-shell"><section className="student-card"><h1>参加用URLからお入りください</h1><p>主催者から届いたQRコードか、チャットに貼られた参加URLを開いてください。</p></section></main>;
   return (
     <main className="student-shell">
-      <header className="student-header"><Wordmark href={typeof window === 'undefined' ? '#' : window.location.href} /><span className="eyebrow">{data?.open === false ? '受付終了' : '参加者の画面'}</span></header>
+      <header className="student-header"><Wordmark href={typeof window === 'undefined' ? '#' : window.location.href} /><div className="student-header-actions"><span className="eyebrow">{data?.open === false ? '受付終了' : '参加者の画面'}</span>{data?.soundEnabled && <button type="button" className="sound-mute-button" aria-label={muted?'効果音を出す':'効果音を消す'} aria-pressed={muted} onClick={()=>setMuted(value=>!value)}>{muted?<VolumeX size={18}/>:<Volume2 size={18}/>}</button>}</div></header>
       <section className="student-card" aria-labelledby="question">
         <div className="question-index"><span>01</span> {data?.title || 'ピンで回答'}</div>
         <h1 id="question">{data?.question || QUESTION}</h1>
@@ -50,5 +55,4 @@ export default function JoinPage() {
     </main>
   );
 }
-
 

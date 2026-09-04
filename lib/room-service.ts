@@ -1,5 +1,5 @@
 import type { PinState } from './pinboard';
-export type RoomState = PinState & { title: string; layout?: string; template?: string; open: boolean; showAnswers?: boolean; isHost: boolean };
+export type RoomState = PinState & { title: string; layout?: string; template?: string; soundEnabled?: boolean; open: boolean; showAnswers?: boolean; isHost: boolean };
 export type RoomAction = { action: 'vote' | 'reset' | 'question' | 'open' | 'visibility'; x?: number; y?: number; question?: string; open?: boolean; visible?: boolean; revision?: number };
 export type { SavedRoom } from './firebase-room-service';
 export const cloudMode = process.env.NEXT_PUBLIC_ROOM_BACKEND === 'firebase';
@@ -83,4 +83,3 @@ export function watchRoom(room: string, onData: (value: RoomState) => void, onEr
   }
   return () => { stopped = true; clearTimeout(timer); unsubscribe?.(); };
 }
-

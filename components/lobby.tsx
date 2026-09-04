@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Copy, MapPin, Plus, Settings, Trash2 } from 'luc
 import { createRoom, deleteSavedRoom, getSavedRooms, roomUrl, cloudMode, type SavedRoom } from '@/lib/room-service';
 import { Wordmark } from '@/components/wordmark';
 import { trackEvent } from '@/components/analytics';
+import { AccountMenu } from '@/components/account-menu';
 
 type Screen = 'start' | 'new' | 'history';
 function dateLabel(value: number) {
@@ -19,9 +20,10 @@ export default function Lobby() {
   const [savedRooms,setSavedRooms]=useState<SavedRoom[]>([]);
   const [loadingRooms,setLoadingRooms]=useState(false);
   const [selectedRoom,setSelectedRoom]=useState<SavedRoom|null>(null);
+  const [loginIntent,setLoginIntent]=useState<'create'|'history'|null>(null);
   useEffect(()=>{try{setRecent(localStorage.getItem('monopin-last-room')||'');}catch{}},[]);
-  async function start(event:React.FormEvent) {
-    event.preventDefault();setBusy(true);setError('');
+  async function createNewRoom() {
+    setBusy(true);setError('');
     try{
       const room=await createRoom(title);
       trackEvent('create_room');
@@ -29,13 +31,38 @@ export default function Lobby() {
       window.location.assign(roomUrl('editor',room));
     }catch(err){setError(err instanceof Error ? err.message : '部屋を作れませんでした。接続を確認してもう一度お試しください。');setBusy(false);}
   }
-  async function openHistory() {
+  async function start(event:React.FormEvent) {
+    event.preventDefault();
+    if(cloudMode){
+      const service=await import('@/lib/firebase-room-service');
+      if(!await service.isHostLoggedIn()){setLoginIntent('create');return;}
+    }
+    await createNewRoom();
+  }
+  async function loadHistory() {
     setScreen('history');setSelectedRoom(null);setError('');
     if (!cloudMode) { setError('過去の部屋の保存は、公開版で利用できます。'); return; }
     setLoadingRooms(true);
     try { setSavedRooms(await getSavedRooms()); }
     catch { setError('過去の部屋を読み込めませんでした。Googleログインと接続を確認してください。'); }
     finally { setLoadingRooms(false); }
+  }
+  async function openHistory() {
+    if(cloudMode){
+      const service=await import('@/lib/firebase-room-service');
+      if(!await service.isHostLoggedIn()){setLoginIntent('history');return;}
+    }
+    await loadHistory();
+  }
+  async function confirmLogin() {
+    const intent=loginIntent;
+    if(!intent)return;
+    setBusy(true);setError('');
+    try {
+      await (await import('@/lib/firebase-room-service')).loginHost();
+      setLoginIntent(null);setBusy(false);
+      if(intent==='create')await createNewRoom();else await loadHistory();
+    } catch { setError('Googleログインを完了できませんでした。もう一度お試しください。');setBusy(false); }
   }
   async function removeRoom(room:SavedRoom) {
     if (!window.confirm(`「${room.title}」を削除しますか？\n質問・回答・参加用URLも使えなくなります。`)) return;
@@ -49,13 +76,14 @@ export default function Lobby() {
     setTitle(`${room.title}（コピー）`);setSelectedRoom(null);setScreen('new');setError('');
   }
   return <main className="lobby-shell">
-    <header className="student-header"><Wordmark /><span className="eyebrow">{cloudMode?'Powered by AI Sensei':'手元で試す'}</span></header>
+    <header className="student-header"><Wordmark /><div className="student-header-actions"><span className="eyebrow">{cloudMode?'Powered by AI Sensei':'手元で試す'}</span><AccountMenu/></div></header>
     <section className="lobby-card">
       <div className="lobby-icon"><MapPin size={28}/></div>
       <h1>みんなが集まる<br/>部屋をつくりましょう。</h1>
       <p>授業も、オンライン研修も。<br/>参加者はQRコードやURLから、すぐにピンを置けます。</p>
 
       {screen==='start' && <div className="lobby-start-actions">
+        {cloudMode&&<p className="host-login-note"><strong>主催者はGoogleログインが必要です</strong><span>部屋の作成を確定するとき、または過去の部屋を開くときに、Googleのログイン画面が表示されます。参加者はログイン不要です。</span></p>}
         <button className="primary-button lobby-choice" onClick={()=>{setScreen('new');setError('');}}><Plus size={20}/>新しい部屋をつくる<ArrowRight size={20}/></button>
         <button className="secondary-button lobby-choice" onClick={openHistory}><Copy size={19}/>過去の部屋を再利用する<ArrowRight size={20}/></button>
       </div>}
@@ -79,5 +107,6 @@ export default function Lobby() {
       <div role="status" className="form-error">{error}</div>
       {screen==='start'&&recent&&<button className="text-button" onClick={()=>window.location.assign(roomUrl('host',recent))}>前回の主催者画面に戻る <ArrowRight size={16}/></button>}
     </section>
+    {loginIntent&&<div className="login-dialog-backdrop" role="presentation"><section className="login-dialog" role="dialog" aria-modal="true" aria-labelledby="login-title"><h2 id="login-title">主催者としてログイン</h2><p>主催者機能を利用するには、Googleアカウントでのログインが必要です。</p><small>Googleアカウントは、部屋の作成・管理に使用します。参加者のログインは必要ありません。</small><div><button type="button" className="text-button" disabled={busy} onClick={()=>setLoginIntent(null)}>キャンセル</button><button type="button" className="primary-button" disabled={busy} onClick={confirmLogin}>{busy?'ログイン中…':'Googleでログイン'}</button></div></section></div>}
   </main>;
 }
