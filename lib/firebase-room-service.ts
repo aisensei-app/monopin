@@ -55,6 +55,7 @@ export async function deleteSavedRoom(room: string) {
   await update(ref(services().db),{[`hostRooms/${user.uid}/${room}`]:null,[`rooms/${room}`]:null});
 }
 export async function createRoom(title: string) {
+  if (!title.trim() || title.trim().length > 20) throw new Error('部屋の名前は20文字以内で入力してください。');
   await loginHost();
   const user = await identity();
   const {db} = services();
