@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { ArrowRight, MapPin, Plus } from 'lucide-react';
 import { createRoom, roomUrl, cloudMode } from '@/lib/room-service';
 import { QUESTION } from '@/lib/reactions';
+import { Wordmark } from '@/components/wordmark';
 
 export default function Lobby() {
   const [title,setTitle]=useState('');
@@ -20,7 +21,7 @@ export default function Lobby() {
     }catch{setError(cloudMode?'ログインまたは部屋の作成に失敗しました。通信状態とFirebaseの設定をご確認ください。':'部屋を作れませんでした。接続を確認してもう一度お試しください。');setBusy(false);}
   }
   return <main className="lobby-shell">
-    <header className="student-header"><span className="wordmark">mono<span>pin</span><span className="brand-dot"/></span><span className="eyebrow">{cloudMode?'オンラインでつながる':'手元で試す'}</span></header>
+    <header className="student-header"><Wordmark /><span className="eyebrow">{cloudMode?'オンラインでつながる':'手元で試す'}</span></header>
     <section className="lobby-card"><div className="lobby-icon"><MapPin size={28}/></div><h1>みんなが集まる<br/>部屋をつくりましょう。</h1><p>授業も、オンライン研修も。<br/>参加者はQRコードやURLから、すぐにピンを置けます。</p>
       <form onSubmit={start}><label htmlFor="room-title">授業・研修会の名前</label><input id="room-title" value={title} onChange={e=>setTitle(e.target.value)} placeholder="例：9月のオンライン研修" maxLength={80} required disabled={busy}/>
       <label htmlFor="room-question">最初の質問</label><textarea id="room-question" value={question} onChange={e=>setQuestion(e.target.value)} maxLength={160} required disabled={busy}/>

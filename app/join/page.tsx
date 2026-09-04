@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { CheckCheck, LoaderCircle } from 'lucide-react';
 import { PinBoard } from '@/components/pin-board';
+import { Wordmark } from '@/components/wordmark';
 import type { Point } from '@/lib/pinboard';
 import { useEventRoom } from '@/hooks/use-event-room';
 import { roomFromLocation } from '@/lib/room-service';
@@ -29,7 +30,7 @@ export default function JoinPage() {
   if (!room) return <main className="student-shell"><section className="student-card"><h1>参加用URLからお入りください</h1><p>主催者から届いたQRコードか、チャットに貼られた参加URLを開いてください。</p></section></main>;
   return (
     <main className="student-shell">
-      <header className="student-header"><a className="wordmark" href={typeof window === 'undefined' ? '#' : window.location.href}>mono<span>pin</span><span className="brand-dot" /></a><span className="eyebrow">{data?.open === false ? '受付終了' : '参加者の画面'}</span></header>
+      <header className="student-header"><Wordmark href={typeof window === 'undefined' ? '#' : window.location.href} /><span className="eyebrow">{data?.open === false ? '受付終了' : '参加者の画面'}</span></header>
       <section className="student-card" aria-labelledby="question">
         <div className="question-index"><span>01</span> {data?.title || 'ピンで回答'}</div>
         <h1 id="question">{data?.question || QUESTION}</h1>

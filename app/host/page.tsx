@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { ArrowUpRight, RotateCcw, Users, Maximize, Minimize, Pencil, Copy, Check } from 'lucide-react';
 import { PinBoard } from '@/components/pin-board';
+import { Wordmark } from '@/components/wordmark';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { QUESTION } from '@/lib/reactions';
 import { useEventRoom } from '@/hooks/use-event-room';
@@ -51,7 +52,7 @@ export default function HostPage() {
   if (data && !data.isHost) return <main className="student-shell"><section className="student-card"><h1>主催者専用の画面です</h1><p>この部屋を作成したブラウザー・アカウントで開いてください。</p>{cloudMode && <button className="primary-button" onClick={async()=>{try{await loginHost();window.location.reload();}catch{setMessage('ログインできませんでした。もう一度お試しください。');}}}>主催者としてGoogleでログイン</button>}<p role="status">{message}</p><a className="preview-link" href={roomUrl('join',room)}>参加者として開く</a><a className="text-button" href={homeUrl}>別の部屋を作成する</a></section></main>;
   return (
     <main className="host-shell">
-      <header className="host-header"><a href={homeUrl} className="wordmark">mono<span>pin</span><span className="brand-dot" /></a><span className="header-divider" /><span className="eyebrow">{data?.title || 'みんなのピンボード'}</span><div className="header-actions"><span className={`connection ${error ? 'offline' : ''}`}><span />{error ? '接続を確認中' : data ? data.open ? '回答受付中' : '受付終了' : '接続中'}</span><button className="icon-button" onClick={toggleFullscreen} aria-label={fullscreen ? '全画面表示を終了' : '全画面で表示'}>{fullscreen ? <Minimize size={20} /> : <Maximize size={20} />}</button></div></header>
+      <header className="host-header"><Wordmark href={homeUrl} /><span className="header-divider" /><span className="eyebrow">{data?.title || 'みんなのピンボード'}</span><div className="header-actions"><span className={`connection ${error ? 'offline' : ''}`}><span />{error ? '接続を確認中' : data ? data.open ? '回答受付中' : '受付終了' : '接続中'}</span><button className="icon-button" onClick={toggleFullscreen} aria-label={fullscreen ? '全画面表示を終了' : '全画面で表示'}>{fullscreen ? <Minimize size={20} /> : <Maximize size={20} />}</button></div></header>
       <div className="host-layout">
         <section className="results-panel" aria-labelledby="host-question">
           <div className="question-topline"><div className="question-index"><span>01</span> みんなのピン</div><span className="anonymous-label">匿名で回答</span></div>
