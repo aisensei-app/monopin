@@ -39,18 +39,19 @@ export async function changeRoom(room: string,action: RoomAction) {
     await set(ref(db,`rooms/${room}/pins/${action.revision}/${user.uid}`),{x:action.x,y:action.y,updatedAt:serverTimestamp()});
     return;
   }
+  if (action.action === 'open') {
+    await set(ref(db,`rooms/${room}/meta/open`), action.open);
+    return;
+  }
   const result = await runTransaction(ref(db,'rooms/'+room+'/meta'), current => {
     if (!current) return current;
     if (current.owner !== user.uid) return;
     if (action.action !== 'open' && current.revision !== action.revision) return;
-    if (action.action === 'open') return {...current,open:action.open};
     return {...current,question:action.action==='question'?action.question?.trim():current.question,revision:current.revision+1};
   },{applyLocally:false});
   if (!result.committed) throw new Error('質問が更新されたか、主催者としてログインしていません。');
-  if (action.action !== 'open') {
-    // Delete only the old revision: new answers arriving after reset remain intact.
-    await remove(ref(db,`rooms/${room}/pins/${action.revision}`));
-  }
+  // Delete only the old revision: new answers arriving after reset remain intact.
+  await remove(ref(db,`rooms/${room}/pins/${action.revision}`));
 }
 export async function watchRoom(room: string,onData:(data:RoomState)=>void,onError:(message:string)=>void) {
   const user = await identity();
