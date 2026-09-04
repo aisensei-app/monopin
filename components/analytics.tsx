@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useLayoutEffect } from 'react';
 
 const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || '';
 
@@ -12,7 +12,7 @@ declare global {
 }
 
 export function Analytics() {
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!measurementId || document.getElementById('monopin-ga4')) return;
     const script = document.createElement('script');
     script.id = 'monopin-ga4';
@@ -20,7 +20,7 @@ export function Analytics() {
     script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
     document.head.appendChild(script);
     window.dataLayer = window.dataLayer || [];
-    window.gtag = (...args: unknown[]) => { window.dataLayer?.push(args); };
+    window.gtag = function () { window.dataLayer?.push(arguments); };
     window.gtag('js', new Date());
     window.gtag('config', measurementId);
   }, []);
