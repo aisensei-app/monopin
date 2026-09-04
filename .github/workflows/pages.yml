@@ -28,6 +28,7 @@ jobs:
       - run: npm run build:pages
         env:
           MONOPIN_FIREBASE_CONFIG: ${{ vars.MONOPIN_FIREBASE_CONFIG }}
+          MONOPIN_GA_MEASUREMENT_ID: ${{ vars.MONOPIN_GA_MEASUREMENT_ID }}
           MONOPIN_BASE: ${{ vars.MONOPIN_BASE }}
       - uses: actions/upload-pages-artifact@v3
         with:

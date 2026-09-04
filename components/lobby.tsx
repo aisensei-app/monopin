@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Copy, MapPin, Plus, Trash2 } from 'lucide-react'
 import { createRoom, deleteSavedRoom, getSavedRooms, roomUrl, cloudMode, type SavedRoom } from '@/lib/room-service';
 import { QUESTION } from '@/lib/reactions';
 import { Wordmark } from '@/components/wordmark';
+import { trackEvent } from '@/components/analytics';
 
 type Screen = 'start' | 'new' | 'history';
 function dateLabel(value: number) {
@@ -25,6 +26,7 @@ export default function Lobby() {
     event.preventDefault();setBusy(true);setError('');
     try{
       const room=await createRoom(title,question);
+      trackEvent('create_room');
       try{localStorage.setItem('monopin-last-room',room);}catch{}
       window.location.assign(roomUrl('host',room));
     }catch(err){setError(err instanceof Error ? err.message : '部屋を作れませんでした。接続を確認してもう一度お試しください。');setBusy(false);}
@@ -45,6 +47,7 @@ export default function Lobby() {
     finally { setBusy(false); }
   }
   function copyRoom(room:SavedRoom) {
+    trackEvent('copy_saved_room');
     setTitle(room.title);setQuestion(room.question);setSelectedRoom(null);setScreen('new');setError('');
   }
   return <main className="lobby-shell">
@@ -71,7 +74,7 @@ export default function Lobby() {
           <button className="room-history-main" type="button" onClick={()=>setSelectedRoom(room)}><strong>{room.title}</strong><span>{room.question}</span><small>{dateLabel(room.createdAt)} 作成</small></button>
           <button className="room-delete-button" type="button" disabled={busy} onClick={()=>removeRoom(room)} aria-label={`「${room.title}」を削除`}><Trash2 size={18}/></button>
         </article>)}</div>}
-        {selectedRoom&&<div className="room-reuse-actions"><p>「{selectedRoom.title}」を選択中</p><a className="secondary-button" href={roomUrl('host',selectedRoom.id)}><MapPin size={18}/>この部屋を開く</a><button className="primary-button" type="button" onClick={()=>copyRoom(selectedRoom)}><Copy size={18}/>コピーして使う</button></div>}</>}
+        {selectedRoom&&<div className="room-reuse-actions"><p>「{selectedRoom.title}」を選択中</p><a className="secondary-button" href={roomUrl('host',selectedRoom.id)} onClick={()=>trackEvent('open_saved_room')}><MapPin size={18}/>この部屋を開く</a><button className="primary-button" type="button" onClick={()=>copyRoom(selectedRoom)}><Copy size={18}/>コピーして使う</button></div>}</>}
       <div role="status" className="form-error">{error}</div>
       {screen==='start'&&recent&&<button className="text-button" onClick={()=>window.location.assign(roomUrl('host',recent))}>前回の主催者画面に戻る <ArrowRight size={16}/></button>}
     </section>

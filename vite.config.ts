@@ -49,6 +49,7 @@ export default defineConfig(async () => {
       'process.env.NEXT_PUBLIC_JOIN_ORIGIN': JSON.stringify(process.env.MONOPIN_JOIN_ORIGIN || ''),
       'process.env.NEXT_PUBLIC_ROOM_BACKEND': JSON.stringify('local'),
       'process.env.NEXT_PUBLIC_FIREBASE_CONFIG': JSON.stringify(''),
+      'process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID': JSON.stringify(process.env.MONOPIN_GA_MEASUREMENT_ID || ''),
     },
     css: { postcss: { plugins: [tailwindcss()] } },
     server: isCodexSeatbeltSandbox
