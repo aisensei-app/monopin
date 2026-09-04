@@ -9,6 +9,7 @@ import { useEventRoom } from '@/hooks/use-event-room';
 import { roomFromLocation } from '@/lib/room-service';
 import { QUESTION } from '@/lib/reactions';
 import { trackEvent } from '@/components/analytics';
+import { defaultMoodPoints, type MoodPoint } from '@/components/mood-configurator';
 
 export default function JoinPage() {
   const [room,setRoom] = useState('');
@@ -28,6 +29,8 @@ export default function JoinPage() {
     finally { busy.current = false; setPending(null); }
   }
   const selected = data?.selected ?? null;
+  let moodPoints:MoodPoint[]|undefined;
+  try { moodPoints = data?.layout ? (JSON.parse(data.layout) as MoodPoint[]) : undefined; } catch { moodPoints=defaultMoodPoints.slice(0,4); }
   if (!room) return <main className="student-shell"><section className="student-card"><h1>参加用URLからお入りください</h1><p>主催者から届いたQRコードか、チャットに貼られた参加URLを開いてください。</p></section></main>;
   return (
     <main className="student-shell">
@@ -36,7 +39,7 @@ export default function JoinPage() {
         <div className="question-index"><span>01</span> {data?.title || 'ピンで回答'}</div>
         <h1 id="question">{data?.question || QUESTION}</h1>
         <p className="student-instruction">今の気持ちに近い場所をタップ。表情の間もOK。</p>
-        <PinBoard own={selected} pending={pending} onPlace={vote} disabled={pending !== null || !data || !room || !data.open || !!error} />
+        <PinBoard own={selected} pending={pending} onPlace={vote} disabled={pending !== null || !data || !room || !data.open || !!error} moodPoints={moodPoints} />
         <div className={`answer-status ${selected !== null ? 'is-sent' : ''}`} role="status" aria-live="polite">
           {pending !== null ? <><LoaderCircle className="spinning" size={22} />ピンを送っています…</> : error || notice ? <span>{notice || error}</span> : !data ? <><LoaderCircle className="spinning" size={22} />質問に接続しています…</> : data?.open === false ? '受付は終了しました。ご参加ありがとうございました。' : selected !== null ? <><CheckCheck size={24} />ピンを置きました</> : 'ボードの好きな場所をタップしてください'}
         </div>

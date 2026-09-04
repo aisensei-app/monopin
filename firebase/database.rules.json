@@ -20,6 +20,7 @@
           "question": {
             ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 160"
           },
+          "layout": { ".validate": "newData.isString() && newData.val().length <= 2000" },
           "revision": {
             ".validate": "newData.isNumber() && ((!data.exists() && newData.val() === 1) || (data.exists() && (newData.val() === data.val() || newData.val() === data.val() + 1)))"
           },

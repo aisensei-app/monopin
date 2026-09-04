@@ -4,19 +4,23 @@ import { MapPin } from 'lucide-react';
 import { ReactionFace } from '@/components/reaction-face';
 import { choices } from '@/lib/reactions';
 import { pointFromRect, type BoardPin, type Point } from '@/lib/pinboard';
+import type { MoodPoint } from '@/components/mood-configurator';
 
-const landmarks = [{ x: 23, y: 25 }, { x: 77, y: 25 }, { x: 23, y: 77 }, { x: 77, y: 77 }];
+const positions = [{x:18,y:20},{x:50,y:20},{x:82,y:20},{x:18,y:50},{x:82,y:50},{x:18,y:80},{x:50,y:80},{x:82,y:80}];
 
-export function PinBoard({ pins = [], own, pending, onPlace, disabled = false }: {
+export function PinBoard({ pins = [], own, pending, onPlace, disabled = false, moodPoints }: {
   pins?: BoardPin[]; own?: Point | null; pending?: Point | null;
-  onPlace?: (point: Point) => void; disabled?: boolean;
+  onPlace?: (point: Point) => void; disabled?: boolean; moodPoints?: MoodPoint[];
 }) {
   const [cursor, setCursor] = useState<Point>({ x: 50, y: 50 });
   const [keyboard, setKeyboard] = useState(false);
+  const [detail,setDetail]=useState<{point:MoodPoint;position:{x:number;y:number}}|null>(null);
+  const points=moodPoints?.length?moodPoints:choices.map(choice=>({emoji:'🙂',label:choice.label,detail:''}));
+  const landmarks=points.length===4?[{x:23,y:25},{x:77,y:25},{x:23,y:77},{x:77,y:77}]:positions.slice(0,points.length);
   const visiblePins = onPlace ? (pending || own ? [{ ...(pending || own)!, id: 0 }] : []) : pins;
   return <div className={`pin-canvas ${onPlace ? 'is-interactive' : 'is-display'}`}>
     <div className="board-art" aria-hidden="true">
-      {landmarks.map((position, index) => <div className="board-landmark" key={index} style={{ left: `${position.x}%`, top: `${position.y}%` }}><ReactionFace choice={index} /><span>{choices[index].label}</span></div>)}
+      {landmarks.map((position, index) => <div className="board-landmark" key={index} style={{ left: `${position.x}%`, top: `${position.y}%` }}>{moodPoints?<><span className="mood-emoji">{points[index].emoji}</span><span>{points[index].label}</span></>:<><ReactionFace choice={index} /><span>{choices[index].label}</span></>}</div>)}
       <span className="board-center-mark" />
     </div>
     {onPlace && <button type="button" className="board-hit-area" disabled={disabled} aria-label="好きな位置にピンを置く。矢印キーで位置を動かし、Enterで送信できます。" onClick={(event) => {
@@ -29,6 +33,8 @@ export function PinBoard({ pins = [], own, pending, onPlace, disabled = false }:
       const step = event.shiftKey ? 1 : 5;
       setCursor((point) => ({ x: Math.max(0, Math.min(100, point.x + (event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0))), y: Math.max(0, Math.min(100, point.y + (event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0))) }));
     }} onBlur={() => setKeyboard(false)} />}
+    {moodPoints?.map((point,index)=>point.detail&&<button type="button" className="landmark-detail-trigger" key={`detail-${index}`} style={{left:`${landmarks[index].x}%`,top:`${landmarks[index].y}%`}} aria-label={`${point.label}の補足を表示`} onPointerDown={event=>{event.preventDefault();const timer=window.setTimeout(()=>setDetail({point,position:landmarks[index]}),450);event.currentTarget.dataset.timer=String(timer);}} onPointerUp={event=>{window.clearTimeout(Number(event.currentTarget.dataset.timer));}} onPointerLeave={event=>window.clearTimeout(Number(event.currentTarget.dataset.timer))}/>)}
+    {detail&&<div className="landmark-detail" style={{left:`${detail.position.x}%`,top:`${detail.position.y>50?detail.position.y-18:detail.position.y+15}%`}} role="status">{detail.point.detail}</div>}
     <div className="board-pin-layer" aria-hidden="true">
       {visiblePins.map((pin) => <span key={`${pin.id}-${pin.x}-${pin.y}`} className={`board-pin ${pending ? 'pending-pin' : ''}`} style={{ left: `${pin.x}%`, top: `${pin.y}%` }}><span className="pin-halo" /><MapPin className="pin-marker" viewBox="2 1 20 21" preserveAspectRatio="xMidYMax meet" strokeWidth={1.8} /><span className="pin-touchpoint" /></span>)}
       {keyboard && onPlace && <span className="board-cursor" style={{ left: `${cursor.x}%`, top: `${cursor.y}%` }} />}
