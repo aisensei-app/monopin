@@ -1,7 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, signInAnonymously, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { getDatabase, ref, set, remove, get, update, onValue, runTransaction, serverTimestamp } from 'firebase/database';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import type { RoomAction, RoomState } from './room-service';
 
 export type SavedRoom = { id: string; title: string; question: string; createdAt: number; expiresAt: number };
@@ -15,7 +14,7 @@ const raw = process.env.NEXT_PUBLIC_FIREBASE_CONFIG || '';
 function services() {
   if (!raw) throw new Error('Firebaseの接続設定がありません。');
   const app = getApps()[0] || initializeApp(JSON.parse(raw));
-  return { auth: getAuth(app), db: getDatabase(app), storage: getStorage(app) };
+  return { auth: getAuth(app), db: getDatabase(app) };
 }
 let signingIn: Promise<unknown> | undefined;
 async function identity() {
@@ -77,15 +76,6 @@ export async function getRoomQuestions(room: string): Promise<RoomQuestion[]> {
 export async function saveRoomQuestion(room: string, question: RoomQuestion) {
   await loginHost();
   await set(ref(services().db,`roomQuestions/${room}/${question.id}`),{text:question.text.trim(),order:question.order,template:question.template || 'mood',caption:question.caption?.trim() || '',imageUrl:question.imageUrl || ''});
-}
-export async function uploadQuestionImage(room: string, question: string, file: File) {
-  if (!file.type.startsWith('image/') || file.size > 5 * 1024 * 1024) throw new Error('JPEG・PNG・WebP形式で、5MB以下の画像を選んでください。');
-  await loginHost();
-  const {storage} = services();
-  const extension = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
-  const target = storageRef(storage,`room-images/${room}/${question}-${Date.now()}.${extension}`);
-  await uploadBytes(target,file,{contentType:file.type});
-  return getDownloadURL(target);
 }
 export async function deleteRoomQuestion(room: string, id: string) {
   await loginHost();

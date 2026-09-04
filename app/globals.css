@@ -227,6 +227,8 @@ button:focus-visible,a:focus-visible,textarea:focus-visible { outline:3px solid 
 .template-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:12px; }
 .template-card { min-height:104px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; border:1px solid #b9dfe3; border-radius:12px; background:#fff; color:#254854; }
 .template-card:hover,.template-card.is-selected { border-color:#30a3b3; background:#f7fcfc; }
+.template-card.is-locked { color:#93a7ab; background:#f4f7f7; border-color:#d8e3e4; cursor:not-allowed; }
+.template-card.is-locked small { color:#93a7ab; }.template-card strong { display:flex; align-items:center; gap:4px; }
 .template-card small { color:#68848b; font-size:11px; }
 .template-art { display:grid; place-items:center; width:36px; height:36px; color:#276877; font-size:24px; }
 .template-art.matrix { font-size:32px; } .template-art.free { font-size:38px; }
