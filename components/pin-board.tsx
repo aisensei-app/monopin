@@ -11,11 +11,13 @@ import {
 } from '@/components/template-preview';
 import type { QuestionTemplate } from '@/lib/firebase-room-service';
 
-const moodLandmarks = (count: number) =>
-  Array.from({ length: count }, (_, index) => ({
-    x: count === 1 ? 50 : 8 + (index * 84) / (count - 1),
-    y: 50,
+const moodLandmarks = (count: number) => {
+  const columns = Math.max(2, count / 2);
+  return Array.from({ length: count }, (_, index) => ({
+    x: columns === 2 ? 28 + (index % columns) * 44 : 12 + ((index % columns) * 76) / (columns - 1),
+    y: index < columns ? 29 : 71,
   }));
+};
 
 export function PinBoard({
   pins = [],

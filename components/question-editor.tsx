@@ -404,14 +404,6 @@ export default function QuestionEditor() {
                     </button>
                   </section>
                 )}
-                <section className="sound-setting" aria-label="ピンの効果音">
-                  <strong>ピンを置いたときの音</strong>
-                  <div>
-                    <label><input type="radio" name="pin-sound" checked={!soundEnabled} onChange={() => setSoundEnabled(false)} />なし</label>
-                    <label><input type="radio" name="pin-sound" checked={soundEnabled} onChange={() => setSoundEnabled(true)} />あり</label>
-                    <button type="button" className="secondary-button" disabled={!soundEnabled} onClick={playPinSound}><Volume2 size={17} />音を試す</button>
-                  </div>
-                </section>
                 <TemplatePreview
                   template={template}
                   moodPoints={moodPoints}
@@ -429,6 +421,26 @@ export default function QuestionEditor() {
                   preview
                   interactivePreview
                 />
+                <section className="sound-setting" aria-label="ピンの効果音">
+                  <div className="sound-setting-row">
+                    <label className="sound-switch">
+                      <span>ピンを置いたときの音</span>
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        checked={soundEnabled}
+                        onChange={(event) => setSoundEnabled(event.target.checked)}
+                      />
+                      <span className="sound-switch-track" aria-hidden="true"><span /></span>
+                      <small>{soundEnabled ? 'ON' : 'OFF'}</small>
+                    </label>
+                    {soundEnabled && (
+                      <button type="button" className="secondary-button" onClick={playPinSound}>
+                        <Volume2 size={17} />音を試す
+                      </button>
+                    )}
+                  </div>
+                </section>
               </>
             )}
             <div className="composer-actions">
