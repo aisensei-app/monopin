@@ -27,7 +27,7 @@ import type {
   RoomQuestion,
 } from '@/lib/firebase-room-service';
 import {
-  defaultMoodPoints,
+  defaultMoodPointsFor,
   MoodConfigurator,
   type MoodPoint,
 } from '@/components/mood-configurator';
@@ -62,7 +62,7 @@ export default function QuestionEditor() {
   const [templateSelected, setTemplateSelected] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [moodPoints, setMoodPoints] = useState<MoodPoint[]>(
-    defaultMoodPoints.slice(0, 4),
+    defaultMoodPointsFor(4),
   );
   const [mapBubbles, setMapBubbles] = useState<MapBubble[]>([]);
   const [drawing, setDrawing] = useState<DrawingStroke[]>([]);
@@ -175,7 +175,7 @@ export default function QuestionEditor() {
       setMoodPoints(
         questionTemplate === 'mood' && question?.layout
           ? JSON.parse(question.layout)
-          : defaultMoodPoints.slice(0, 4),
+          : defaultMoodPointsFor(4),
       );
       setMapBubbles(
         questionTemplate === 'world' || questionTemplate === 'japan'
@@ -186,7 +186,7 @@ export default function QuestionEditor() {
         questionTemplate === 'free' ? parseDrawing(question?.layout) : [],
       );
     } catch {
-      setMoodPoints(defaultMoodPoints.slice(0, 4));
+      setMoodPoints(defaultMoodPointsFor(4));
       setMapBubbles([]);
       setDrawing([]);
     }

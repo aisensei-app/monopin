@@ -9,7 +9,7 @@ import { useEventRoom } from '@/hooks/use-event-room';
 import { roomFromLocation } from '@/lib/room-service';
 import { QUESTION } from '@/lib/reactions';
 import { trackEvent } from '@/components/analytics';
-import { defaultMoodPoints, type MoodPoint } from '@/components/mood-configurator';
+import { defaultMoodPointsFor, type MoodPoint } from '@/components/mood-configurator';
 import type { QuestionTemplate } from '@/lib/firebase-room-service';
 import { playPinSound } from '@/lib/pin-sound';
 
@@ -36,7 +36,7 @@ export default function JoinPage() {
   }
   const selected = data?.selected ?? null;
   let moodPoints:MoodPoint[]|undefined;
-  try { moodPoints = data?.template === 'mood' && data.layout ? (JSON.parse(data.layout) as MoodPoint[]) : undefined; } catch { moodPoints=defaultMoodPoints.slice(0,4); }
+  try { moodPoints = data?.template === 'mood' && data.layout ? (JSON.parse(data.layout) as MoodPoint[]) : undefined; } catch { moodPoints=defaultMoodPointsFor(4); }
   if (!room) return <main className="student-shell"><section className="student-card"><h1>参加用URLからお入りください</h1><p>主催者から届いたQRコードか、チャットに貼られた参加URLを開いてください。</p></section></main>;
   return (
     <main className="student-shell">
@@ -55,4 +55,3 @@ export default function JoinPage() {
     </main>
   );
 }
-

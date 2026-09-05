@@ -1,10 +1,9 @@
 'use client';
 import { useState } from 'react';
 import { MapPin } from 'lucide-react';
-import { ReactionFace } from '@/components/reaction-face';
-import { choices } from '@/lib/reactions';
 import { pointFromRect, type BoardPin, type Point } from '@/lib/pinboard';
-import type { MoodPoint } from '@/components/mood-configurator';
+import { defaultMoodPointsFor, type MoodPoint } from '@/components/mood-configurator';
+import { MoodSymbol } from '@/components/mood-face';
 import {
   TemplatePreview,
   parseDrawing,
@@ -12,16 +11,11 @@ import {
 } from '@/components/template-preview';
 import type { QuestionTemplate } from '@/lib/firebase-room-service';
 
-const positions = [
-  { x: 18, y: 20 },
-  { x: 50, y: 20 },
-  { x: 82, y: 20 },
-  { x: 18, y: 50 },
-  { x: 82, y: 50 },
-  { x: 18, y: 80 },
-  { x: 50, y: 80 },
-  { x: 82, y: 80 },
-];
+const moodLandmarks = (count: number) =>
+  Array.from({ length: count }, (_, index) => ({
+    x: count === 1 ? 50 : 8 + (index * 84) / (count - 1),
+    y: 50,
+  }));
 
 export function PinBoard({
   pins = [],
@@ -48,22 +42,8 @@ export function PinBoard({
     point: MoodPoint;
     position: { x: number; y: number };
   } | null>(null);
-  const points = moodPoints?.length
-    ? moodPoints
-    : choices.map((choice) => ({
-        emoji: '🙂',
-        label: choice.label,
-        detail: '',
-      }));
-  const landmarks =
-    points.length === 4
-      ? [
-          { x: 23, y: 25 },
-          { x: 77, y: 25 },
-          { x: 23, y: 77 },
-          { x: 77, y: 77 },
-        ]
-      : positions.slice(0, points.length);
+  const points = moodPoints?.length ? moodPoints : defaultMoodPointsFor(4);
+  const landmarks = moodLandmarks(points.length);
   const visiblePins = onPlace
     ? pending || own
       ? [{ ...(pending || own)!, id: 0 }]
@@ -80,17 +60,10 @@ export function PinBoard({
                 key={index}
                 style={{ left: `${position.x}%`, top: `${position.y}%` }}
               >
-                {moodPoints ? (
-                  <>
-                    <span className="mood-emoji">{points[index].emoji}</span>
-                    <span>{points[index].label}</span>
-                  </>
-                ) : (
-                  <>
-                    <ReactionFace choice={index} />
-                    <span>{choices[index].label}</span>
-                  </>
-                )}
+                <>
+                  <MoodSymbol point={points[index]} />
+                  <span>{points[index].label}</span>
+                </>
               </div>
             ))}
             <span className="board-center-mark" />

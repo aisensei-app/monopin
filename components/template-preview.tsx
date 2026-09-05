@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { MapPin } from 'lucide-react';
 import type { QuestionTemplate } from '@/lib/firebase-room-service';
 import type { MoodPoint } from '@/components/mood-configurator';
+import { MoodSymbol } from '@/components/mood-face';
 import worldMap from '@/assets/world-map.png';
 import japanMap from '@/assets/japan-map.png';
 
@@ -206,7 +207,7 @@ export function TemplatePreview({
         >
           {moodPoints.slice(0, 8).map((point, index) => (
             <div key={index}>
-              <span>{point.emoji}</span>
+              <MoodSymbol point={point} />
               <small>{point.label}</small>
             </div>
           ))}

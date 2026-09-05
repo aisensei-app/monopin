@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescripti
 import { QUESTION } from '@/lib/reactions';
 import { useEventRoom } from '@/hooks/use-event-room';
 import { roomFromLocation, roomUrl, cloudMode, loginHost } from '@/lib/room-service';
-import { defaultMoodPoints, type MoodPoint } from '@/components/mood-configurator';
+import { defaultMoodPointsFor, type MoodPoint } from '@/components/mood-configurator';
 import type { QuestionTemplate } from '@/lib/firebase-room-service';
 import { AccountMenu } from '@/components/account-menu';
 
@@ -39,7 +39,7 @@ export default function HostPage() {
   }, []);
   const total = data?.pins.length || 0;
   let moodPoints:MoodPoint[]|undefined;
-  try { moodPoints = data?.template === 'mood' && data.layout ? (JSON.parse(data.layout) as MoodPoint[]) : undefined; } catch { moodPoints=defaultMoodPoints.slice(0,4); }
+  try { moodPoints = data?.template === 'mood' && data.layout ? (JSON.parse(data.layout) as MoodPoint[]) : undefined; } catch { moodPoints=defaultMoodPointsFor(4); }
   async function update(action: 'reset' | 'question' | 'open' | 'visibility') {
     setBusy(true); setMessage('');
     try { await mutate({ action, question: draft, open: !data?.open, visible: !data?.showAnswers }); setConfirm(false); setEditing(false); }
@@ -80,4 +80,3 @@ export default function HostPage() {
     </main>
   );
 }
-
