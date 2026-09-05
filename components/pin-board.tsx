@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { MapPin } from 'lucide-react';
 import { pointFromRect, type BoardPin, type Point } from '@/lib/pinboard';
 import { defaultMoodPointsFor, type MoodPoint } from '@/components/mood-configurator';
-import { MoodSymbol } from '@/components/mood-face';
 import {
   TemplatePreview,
   parseDrawing,
@@ -63,7 +62,7 @@ export function PinBoard({
                 style={{ left: `${position.x}%`, top: `${position.y}%` }}
               >
                 <>
-                  <MoodSymbol point={points[index]} />
+                  <span className="mood-emoji">{points[index].emoji}</span>
                   <span>{points[index].label}</span>
                 </>
               </div>

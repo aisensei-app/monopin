@@ -11,7 +11,6 @@ import {
   Plus,
   Trash2,
   MessageCirclePlus,
-  Volume2,
   X,
 } from 'lucide-react';
 import { Wordmark } from '@/components/wordmark';
@@ -38,7 +37,6 @@ import {
   type DrawingStroke,
   type MapBubble,
 } from '@/components/template-preview';
-import { playPinSound } from '@/lib/pin-sound';
 import { AccountMenu } from '@/components/account-menu';
 
 const templates: { id: QuestionTemplate; name: string; hint: string }[] = [
@@ -52,7 +50,7 @@ const templates: { id: QuestionTemplate; name: string; hint: string }[] = [
 
 export default function QuestionEditor() {
   const [room, setRoom] = useState('');
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState<string | null>(null);
   const [questions, setQuestions] = useState<RoomQuestion[]>([]);
   const [draft, setDraft] = useState('');
   const [editing, setEditing] = useState<string | null>(null);
@@ -210,7 +208,7 @@ export default function QuestionEditor() {
           <ArrowLeft size={17} />
           部屋一覧
         </a>
-        <h1>{title || '質問を準備'}</h1>
+        <h1 className={title ? undefined : 'editor-title-loading'}>{title || '\u00a0'}</h1>
         <p className="editor-intro">
           質問を追加して、授業中に順番に開始できます。
         </p>
@@ -434,11 +432,6 @@ export default function QuestionEditor() {
                       <span className="sound-switch-track" aria-hidden="true"><span /></span>
                       <small>{soundEnabled ? 'ON' : 'OFF'}</small>
                     </label>
-                    {soundEnabled && (
-                      <button type="button" className="secondary-button" onClick={playPinSound}>
-                        <Volume2 size={17} />音を試す
-                      </button>
-                    )}
                   </div>
                 </section>
               </>

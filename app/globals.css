@@ -35,7 +35,8 @@ button,a { touch-action:manipulation; }
 button { cursor:pointer; font:inherit; }
 button:disabled { cursor:not-allowed; opacity:.5; }
 a { color:inherit; text-decoration:none; }
-button:focus-visible,a:focus-visible,textarea:focus-visible { outline:3px solid #276877; outline-offset:5px; }
+button:focus-visible,a:focus-visible { outline:3px solid #276877; outline-offset:5px; }
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):focus-visible,textarea:focus-visible { outline:none!important; border-color:#30a3b3!important; box-shadow:0 0 0 2px #d8f3f5; }
 .wordmark { display:inline-flex; align-items:baseline; font-family:Arial,sans-serif; font-size:30px; font-weight:800; letter-spacing:-1.5px; line-height:1; }
 .wordmark-mono { color:#254854; }
 .wordmark-pin { color:#297f91; }
@@ -144,18 +145,6 @@ button:focus-visible,a:focus-visible,textarea:focus-visible { outline:3px solid 
 .board-landmark>span:last-child { font-size:clamp(14px,1.5vw,19px); font-weight:650; color:#456d76; background:#edf9faad; border-radius:8px; padding:1px 8px; }
 .board-center-mark { position:absolute; left:50%; top:50%; width:8px; height:8px; border:1px solid #83bbc5; border-radius:50%; transform:translate(-50%,-50%); }
 .mood-emoji { display:grid; place-items:center; width:clamp(40px,5vw,66px); height:clamp(40px,5vw,66px); font-size:clamp(28px,3.8vw,48px); background:transparent!important; }
-.mood-face { position:relative; display:block; width:clamp(42px,5.3vw,68px); aspect-ratio:1; border:2px solid #5b7f86; border-radius:47% 53% 51% 49% / 52% 46% 54% 48%; background:#f7fcfc; box-shadow:0 3px 10px #2548540d; }
-.mood-face-eyes i { position:absolute; top:33%; width:5px; height:8px; border-radius:50%; background:#456d76; }
-.mood-face-eyes i:first-child { left:30%; }.mood-face-eyes i:last-child { right:30%; }
-.mood-face-eyes.is-down i { height:6px; transform:rotate(18deg); }.mood-face-eyes.is-down i:last-child { transform:rotate(-18deg); }
-.mood-face-eyes.is-flat i { height:2px; border-radius:2px; }
-.mood-face-eyes.is-up i { height:5px; transform:rotate(-12deg); }.mood-face-eyes.is-up i:last-child { transform:rotate(12deg); }
-.mood-face-mouth { position:absolute; left:31%; right:31%; top:60%; height:13%; border:2px solid #456d76; border-left-color:transparent; border-right-color:transparent; border-bottom-color:transparent; border-radius:50%; }
-.mood-face-mouth.is-soft-sad { left:34%; right:34%; height:9%; }
-.mood-face-mouth.is-flat { top:64%; height:2px; border:0; border-radius:2px; background:#456d76; }
-.mood-face-mouth.is-soft-smile,.mood-face-mouth.is-smile { top:55%; border-top-color:transparent; border-bottom-color:#456d76; }
-.mood-face-mouth.is-smile { left:28%; right:28%; height:17%; }
-.mood-face-happy,.mood-face-energetic { background:#edfafa; border-color:#4d8c97; }.mood-face-distressed,.mood-face-sad { background:#f4f7f7; border-color:#789398; }
 .landmark-detail-trigger { position:absolute; z-index:3; width:52px; height:52px; transform:translate(-50%,-50%); border:0; background:transparent; }.landmark-detail { position:absolute; z-index:4; max-width:190px; transform:translate(-50%,-50%); padding:8px 10px; border-radius:9px; background:#254854; color:#fff; font-size:13px; line-height:1.5; box-shadow:0 4px 16px #25485444; }
 .board-hit-area { position:absolute; inset:0; width:100%; height:100%; border:0; background:transparent; border-radius:inherit; cursor:crosshair; touch-action:manipulation; z-index:1; }
 .board-hit-area:disabled { cursor:wait; opacity:1; }
@@ -186,7 +175,7 @@ button:focus-visible,a:focus-visible,textarea:focus-visible { outline:3px solid 
 .lobby-card label { display:block; font-size:15px; font-weight:700; margin:18px 0 8px; }
 .lobby-card input,.lobby-card textarea { display:block; width:100%; padding:13px; border:1px solid #a6d4da; border-radius:10px; background:#fafdfe; font:inherit; }
 .lobby-card textarea { min-height:106px; resize:vertical; }
-.lobby-card input:focus-visible { outline:3px solid #276877; outline-offset:3px; }
+.lobby-card input:focus-visible { outline:none; border-color:#30a3b3; box-shadow:0 0 0 2px #d8f3f5; }
 .create-room-button { display:flex; align-items:center; justify-content:center; gap:12px; width:100%; padding:16px; margin-top:25px; }
 .form-note,.form-error { font-size:14px; line-height:1.8; }
 .form-error { margin-top:12px; color:#8b3e3e; }

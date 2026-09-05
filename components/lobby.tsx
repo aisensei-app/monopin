@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ArrowLeft, ArrowRight, Copy, MapPin, Plus, Settings, Trash2 } from 'lucide-react';
 import { createRoom, deleteSavedRoom, getSavedRooms, roomUrl, cloudMode, type SavedRoom } from '@/lib/room-service';
 import { Wordmark } from '@/components/wordmark';
@@ -15,13 +15,11 @@ export default function Lobby() {
   const [title,setTitle]=useState('');
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
-  const [recent,setRecent]=useState('');
   const [screen,setScreen]=useState<Screen>('start');
   const [savedRooms,setSavedRooms]=useState<SavedRoom[]>([]);
   const [loadingRooms,setLoadingRooms]=useState(false);
   const [selectedRoom,setSelectedRoom]=useState<SavedRoom|null>(null);
   const [loginIntent,setLoginIntent]=useState<'create'|'history'|null>(null);
-  useEffect(()=>{try{setRecent(localStorage.getItem('monopin-last-room')||'');}catch{}},[]);
   async function createNewRoom() {
     setBusy(true);setError('');
     try{
@@ -89,7 +87,7 @@ export default function Lobby() {
       </div>}
 
       {screen==='new' && <><button className="back-button" type="button" onClick={()=>{setScreen('start');setError('');}}><ArrowLeft size={17}/>選び直す</button>
-        <form onSubmit={start}><label htmlFor="room-title">新しい部屋の名前</label><input id="room-title" value={title} onChange={e=>setTitle(e.target.value)} placeholder="例：9月のオンライン研修" maxLength={20} required disabled={busy}/>
+        <form onSubmit={start}><label htmlFor="room-title">新しい部屋の名前</label><input id="room-title" autoFocus value={title} onChange={e=>setTitle(e.target.value)} placeholder="例：9月のオンライン研修" maxLength={20} required disabled={busy}/>
         {cloudMode&&<p className="form-note">次の画面で質問を追加します。部屋は10日間保存され、最大3件まで残せます。</p>}
         <button className="primary-button create-room-button" disabled={busy||!title.trim()}><Plus size={19}/>{busy?'部屋を準備しています…':'部屋をつくる'}<ArrowRight size={20}/></button></form></>}
 
@@ -105,7 +103,6 @@ export default function Lobby() {
         </article>)}</div>}
         </>}
       <div role="status" className="form-error">{error}</div>
-      {screen==='start'&&recent&&<button className="text-button" onClick={()=>window.location.assign(roomUrl('host',recent))}>前回の主催者画面に戻る <ArrowRight size={16}/></button>}
     </section>
     {loginIntent&&<div className="login-dialog-backdrop" role="presentation"><section className="login-dialog" role="dialog" aria-modal="true" aria-labelledby="login-title"><h2 id="login-title">主催者としてログイン</h2><p>主催者機能を利用するには、Googleアカウントでのログインが必要です。</p><small>Googleアカウントは、部屋の作成・管理に使用します。参加者のログインは必要ありません。</small><div><button type="button" className="text-button" disabled={busy} onClick={()=>setLoginIntent(null)}>キャンセル</button><button type="button" className="primary-button" disabled={busy} onClick={confirmLogin}>{busy?'ログイン中…':'Googleでログイン'}</button></div></section></div>}
   </main>;
