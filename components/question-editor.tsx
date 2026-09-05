@@ -219,7 +219,7 @@ export default function QuestionEditor() {
           <ArrowLeft size={17} />
           部屋一覧
         </a>
-        <h1 className={title ? undefined : 'editor-title-loading'}>{title || ' '}</h1>
+        <h1 className={title ? undefined : 'editor-title-loading'}>{title || ' '}</h1>
         <button
           type="button"
           className="editor-add-button"
@@ -306,6 +306,7 @@ export default function QuestionEditor() {
                   template={template}
                   moodPoints={moodPoints}
                   bubbles={mapBubbles}
+                  drawing={drawing}
                   matrixLabels={matrixLabels}
                   preview
                   interactivePreview
