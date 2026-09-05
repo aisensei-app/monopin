@@ -34,8 +34,10 @@ import {
   TemplatePreview,
   parseDrawing,
   parseMapBubbles,
+  parseMatrixLabels,
   type DrawingStroke,
   type MapBubble,
+  type MatrixLabels,
 } from '@/components/template-preview';
 import { AccountMenu } from '@/components/account-menu';
 
@@ -63,6 +65,7 @@ export default function QuestionEditor() {
     defaultMoodPointsFor(4),
   );
   const [mapBubbles, setMapBubbles] = useState<MapBubble[]>([]);
+  const [matrixLabels, setMatrixLabels] = useState<MatrixLabels>({});
   const [drawing, setDrawing] = useState<DrawingStroke[]>([]);
   const [drawingColor, setDrawingColor] = useState('#276877');
   const [drawingWidth, setDrawingWidth] = useState(4);
@@ -99,7 +102,9 @@ export default function QuestionEditor() {
         ? JSON.stringify({ bubbles: mapBubbles })
         : template === 'free'
           ? JSON.stringify({ drawing })
-          : '';
+          : template === 'matrix'
+            ? JSON.stringify({ matrixLabels })
+            : '';
   async function save() {
     if (!draft.trim() || !room) return;
     setBusy(true);
@@ -183,10 +188,16 @@ export default function QuestionEditor() {
       setDrawing(
         questionTemplate === 'free' ? parseDrawing(question?.layout) : [],
       );
+      setMatrixLabels(
+        questionTemplate === 'matrix'
+          ? parseMatrixLabels(question?.layout)
+          : {},
+      );
     } catch {
       setMoodPoints(defaultMoodPointsFor(4));
       setMapBubbles([]);
       setDrawing([]);
+      setMatrixLabels({});
     }
     setAdding(true);
     setStep(1);
@@ -208,17 +219,15 @@ export default function QuestionEditor() {
           <ArrowLeft size={17} />
           部屋一覧
         </a>
-        <h1 className={title ? undefined : 'editor-title-loading'}>{title || '\u00a0'}</h1>
-        <p className="editor-intro">
-          質問を追加して、授業中に順番に開始できます。
-        </p>
-        <div className="editor-heading">
-          <span />
-          <button className="secondary-button" onClick={() => openComposer()}>
-            <Plus size={17} />
-            質問を追加
-          </button>
-        </div>
+        <h1 className={title ? undefined : 'editor-title-loading'}>{title || ' '}</h1>
+        <button
+          type="button"
+          className="primary-button editor-add-button"
+          onClick={() => openComposer()}
+        >
+          <Plus size={17} />
+          質問を追加
+        </button>
         {adding && (
           <section className="composer">
             <div className="composer-topline">
@@ -297,6 +306,7 @@ export default function QuestionEditor() {
                   template={template}
                   moodPoints={moodPoints}
                   bubbles={mapBubbles}
+                  matrixLabels={matrixLabels}
                   preview
                   interactivePreview
                   soundEnabled={soundEnabled}
@@ -311,6 +321,73 @@ export default function QuestionEditor() {
                     onChange={setMoodPoints}
                   />
                 )}{' '}
+                {template === 'matrix' && (
+                  <section
+                    className="matrix-label-editor"
+                    aria-label="軸のラベルを編集"
+                  >
+                    <label>
+                      上
+                      <input
+                        value={matrixLabels.top || ''}
+                        maxLength={20}
+                        placeholder="高い"
+                        aria-label="上のラベル"
+                        onChange={(e) =>
+                          setMatrixLabels({
+                            ...matrixLabels,
+                            top: e.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      下
+                      <input
+                        value={matrixLabels.bottom || ''}
+                        maxLength={20}
+                        placeholder="低い"
+                        aria-label="下のラベル"
+                        onChange={(e) =>
+                          setMatrixLabels({
+                            ...matrixLabels,
+                            bottom: e.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      左
+                      <input
+                        value={matrixLabels.left || ''}
+                        maxLength={20}
+                        placeholder="低い"
+                        aria-label="左のラベル"
+                        onChange={(e) =>
+                          setMatrixLabels({
+                            ...matrixLabels,
+                            left: e.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                    <label>
+                      右
+                      <input
+                        value={matrixLabels.right || ''}
+                        maxLength={20}
+                        placeholder="高い"
+                        aria-label="右のラベル"
+                        onChange={(e) =>
+                          setMatrixLabels({
+                            ...matrixLabels,
+                            right: e.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                  </section>
+                )}
                 {(template === 'world' || template === 'japan') && (
                   <section className="bubble-editor">
                     <button
@@ -408,6 +485,7 @@ export default function QuestionEditor() {
                   moodPoints={moodPoints}
                   bubbles={mapBubbles}
                   drawing={drawing}
+                  matrixLabels={matrixLabels}
                   editable={
                     template === 'world' ||
                     template === 'japan' ||
