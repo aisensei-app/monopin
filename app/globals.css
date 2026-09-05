@@ -287,12 +287,6 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="
 .preview-moods[data-count="4"] { grid-template-columns:repeat(2,minmax(0,1fr)); }
 .preview-moods[data-count="6"] { grid-template-columns:repeat(3,minmax(0,1fr)); }
 .preview-moods[data-count="8"] { grid-template-columns:repeat(4,minmax(0,1fr)); }
-.preview-moods[data-count="4"]>div:not(:nth-child(2n)) { border-right:1px dashed #c6c6c6; }
-.preview-moods[data-count="4"]>div:nth-child(-n+2) { border-bottom:1px dashed #c6c6c6; }
-.preview-moods[data-count="6"]>div:not(:nth-child(3n)) { border-right:1px dashed #c6c6c6; }
-.preview-moods[data-count="6"]>div:nth-child(-n+3) { border-bottom:1px dashed #c6c6c6; }
-.preview-moods[data-count="8"]>div:not(:nth-child(4n)) { border-right:1px dashed #c6c6c6; }
-.preview-moods[data-count="8"]>div:nth-child(-n+4) { border-bottom:1px dashed #c6c6c6; }
 .map-bubble { position:absolute; z-index:2; max-width:140px; padding:6px 10px; transform:translate(-50%,-50%); border:1px solid #30a3b3; border-radius:12px; background:#fff; color:#254854; font-size:13px; line-height:1.4; box-shadow:0 3px 10px #25485418; }.map-bubble::after { content:''; position:absolute; left:16px; bottom:-6px; width:10px; height:10px; transform:rotate(45deg); border-right:1px solid #30a3b3; border-bottom:1px solid #30a3b3; background:#fff; }.map-bubble.is-editable { touch-action:none; cursor:grab; }.map-bubble.is-editable:active { cursor:grabbing; }
 .bubble-editor { margin:12px 0 14px; padding:14px; border:1px solid #c8e4e7; border-radius:12px; background:#fff; }.bubble-row { display:flex; gap:7px; margin-top:8px; }.bubble-row input { flex:1; }.bubble-row button { display:grid; place-items:center; width:38px; border:0; border-radius:8px; background:#fff3f3; color:#a34040; }.bubble-editor p { margin:8px 0 0; color:#68848b; font-size:12px; }
 .matrix-label-editor { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; margin:12px 0 14px; padding:14px; border:1px solid #c8e4e7; border-radius:12px; background:#fff; }.matrix-label-editor label { display:grid; gap:6px; margin:0; font-size:13px; font-weight:700; color:#52717b; }.matrix-label-editor input { padding:10px 12px; border:1px solid #a6d4da; border-radius:9px; font:inherit; color:#254854; }
