@@ -15,6 +15,12 @@ export type DrawingStroke = {
   width: number;
   points: { x: number; y: number }[];
 };
+export type MatrixLabels = {
+  top?: string;
+  bottom?: string;
+  left?: string;
+  right?: string;
+};
 
 export function parseMapBubbles(layout?: string): MapBubble[] {
   if (!layout) return [];
@@ -40,6 +46,25 @@ export function parseDrawing(layout?: string): DrawingStroke[] {
   }
 }
 
+export function parseMatrixLabels(layout?: string): MatrixLabels {
+  if (!layout) return {};
+  try {
+    const value = JSON.parse(layout) as { matrixLabels?: MatrixLabels };
+    const labels = value.matrixLabels;
+    if (!labels || typeof labels !== 'object') return {};
+    const pick = (input?: string) =>
+      typeof input === 'string' ? input.slice(0, 20) : undefined;
+    return {
+      top: pick(labels.top),
+      bottom: pick(labels.bottom),
+      left: pick(labels.left),
+      right: pick(labels.right),
+    };
+  } catch {
+    return {};
+  }
+}
+
 export function TemplatePreview({
   template,
   moodPoints = [],
@@ -53,6 +78,7 @@ export function TemplatePreview({
   preview = false,
   interactivePreview = false,
   soundEnabled = false,
+  matrixLabels = {},
 }: {
   template: QuestionTemplate;
   moodPoints?: MoodPoint[];
@@ -66,6 +92,7 @@ export function TemplatePreview({
   preview?: boolean;
   interactivePreview?: boolean;
   soundEnabled?: boolean;
+  matrixLabels?: MatrixLabels;
 }) {
   const canvas = useRef<HTMLDivElement>(null);
   const [pins, setPins] = useState<{ id: number; x: number; y: number }[]>([]);
@@ -229,10 +256,18 @@ export function TemplatePreview({
         <>
           <span className="matrix-line horizontal" />
           <span className="matrix-line vertical" />
-          <small className="matrix-label top">高い</small>
-          <small className="matrix-label bottom">低い</small>
-          <small className="matrix-label left">低い</small>
-          <small className="matrix-label right">高い</small>
+          <small className="matrix-label top">
+            {matrixLabels.top || '高い'}
+          </small>
+          <small className="matrix-label bottom">
+            {matrixLabels.bottom || '低い'}
+          </small>
+          <small className="matrix-label left">
+            {matrixLabels.left || '低い'}
+          </small>
+          <small className="matrix-label right">
+            {matrixLabels.right || '高い'}
+          </small>
         </>
       )}
       {template === 'free' && (
