@@ -7,6 +7,7 @@ import {
   TemplatePreview,
   parseDrawing,
   parseMapBubbles,
+  parseMatrixLabels,
 } from '@/components/template-preview';
 import type { QuestionTemplate } from '@/lib/firebase-room-service';
 
@@ -75,6 +76,7 @@ export function PinBoard({
             template={template}
             bubbles={parseMapBubbles(layout)}
             drawing={parseDrawing(layout)}
+            matrixLabels={parseMatrixLabels(layout)}
           />
         )}
       </div>
