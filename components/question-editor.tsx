@@ -222,7 +222,7 @@ export default function QuestionEditor() {
         <h1 className={title ? undefined : 'editor-title-loading'}>{title || ' '}</h1>
         <button
           type="button"
-          className="primary-button editor-add-button"
+          className="editor-add-button"
           onClick={() => openComposer()}
         >
           <Plus size={17} />
@@ -595,7 +595,7 @@ export default function QuestionEditor() {
           href={roomUrl('host', room)}
           onClick={() => trackEvent('open_saved_room')}
         >
-          主催者画面を開く <Copy size={17} />
+          <Copy size={17} /> 主催者画面を開く
         </a>
         <p role="status" className="form-error">
           {message}
