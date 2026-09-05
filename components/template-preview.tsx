@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { MapPin } from 'lucide-react';
 import type { QuestionTemplate } from '@/lib/firebase-room-service';
 import type { MoodPoint } from '@/components/mood-configurator';
+import { playPinSound } from '@/lib/pin-sound';
 import worldMap from '@/assets/world-map.png';
 import japanMap from '@/assets/japan-map.png';
 
@@ -51,6 +52,7 @@ export function TemplatePreview({
   drawingWidth = 4,
   preview = false,
   interactivePreview = false,
+  soundEnabled = false,
 }: {
   template: QuestionTemplate;
   moodPoints?: MoodPoint[];
@@ -63,6 +65,7 @@ export function TemplatePreview({
   drawingWidth?: number;
   preview?: boolean;
   interactivePreview?: boolean;
+  soundEnabled?: boolean;
 }) {
   const canvas = useRef<HTMLDivElement>(null);
   const [pins, setPins] = useState<{ id: number; x: number; y: number }[]>([]);
@@ -167,6 +170,7 @@ export function TemplatePreview({
   const addPreviewPin = (x: number, y: number) => {
     const pin = { id: Date.now(), x, y };
     setPins((items) => [...items, pin]);
+    if (soundEnabled) playPinSound();
     window.setTimeout(
       () => setPins((items) => items.filter((item) => item.id !== pin.id)),
       3000,

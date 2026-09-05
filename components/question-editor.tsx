@@ -299,6 +299,7 @@ export default function QuestionEditor() {
                   bubbles={mapBubbles}
                   preview
                   interactivePreview
+                  soundEnabled={soundEnabled}
                 />
               </>
             )}
@@ -418,6 +419,7 @@ export default function QuestionEditor() {
                   drawingWidth={drawingWidth}
                   preview
                   interactivePreview
+                  soundEnabled={soundEnabled}
                 />
                 <section className="sound-setting" aria-label="ピンの効果音">
                   <div className="sound-setting-row">
