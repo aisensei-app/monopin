@@ -225,8 +225,8 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="
 .editor-shell { max-width:820px; margin:auto; padding:0 24px 40px; }
 .editor-card { background:#fff; border:1px solid #c8e4e7; border-radius:24px; padding:32px; }
 .editor-card h1 { margin:14px 0 4px; font-size:28px; }
-@keyframes editor-title-pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
-.editor-title-loading { display:inline-block; width:200px; max-width:60%; height:1.2em; border-radius:8px; background:#d8f3f5; color:transparent; vertical-align:middle; animation:editor-title-pulse 1.4s ease-in-out infinite; }
+.editor-title-loading { display:inline-flex; align-items:center; color:#52717b; }
+.loading-note { display:flex; align-items:center; justify-content:center; gap:8px; }
 .editor-intro { margin:0 0 24px; color:#52717b; font-size:14px; }
 .editor-heading { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:12px; }
 .editor-heading strong { font-size:17px; }
