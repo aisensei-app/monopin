@@ -80,7 +80,7 @@ export async function createRoom(title: string) {
   const room = crypto.randomUUID().replaceAll('-','').slice(0,24);
   const createdAt = Date.now();
   await update(ref(db),{
-    [`rooms/${room}/meta`]:{owner:user.uid,title:title.trim(),question:ROOM_PLACEHOLDER,template:'mood',layout:'',soundEnabled:false,revision:1,open:false,showAnswers:true,createdAt:serverTimestamp()},
+    [`rooms/${room}/meta`]:{owner:user.uid,title:title.trim(),question:ROOM_PLACEHOLDER,template:'mood',layout:'',soundEnabled:false,revision:1,open:false,showAnswers:true,currentQuestionId:'',createdAt:serverTimestamp()},
     [`hostRooms/${user.uid}/${room}`]:{title:title.trim(),question:ROOM_PLACEHOLDER,createdAt,expiresAt:createdAt + ROOM_RETENTION_MS},
   });
   return room;
@@ -93,7 +93,7 @@ export async function getRoomQuestions(room: string): Promise<RoomQuestion[]> {
 export async function saveRoomQuestion(room: string, question: RoomQuestion) {
   await loginHost();
   await set(ref(services().db,`roomQuestions/${room}/${question.id}`),{text:question.text.trim(),order:question.order,template:question.template || 'mood',caption:question.caption?.trim() || '',imageUrl:question.imageUrl || '',layout:question.layout || '',soundEnabled:question.soundEnabled === true});
-  await runTransaction(ref(services().db,`rooms/${room}/meta`),current=>current?{...current,question:question.text.trim(),template:question.template || 'mood',layout:question.layout || '',soundEnabled:question.soundEnabled === true,revision:current.revision+1}:current,{applyLocally:false});
+  await runTransaction(ref(services().db,`rooms/${room}/meta`),current=>current?{...current,question:question.text.trim(),template:question.template || 'mood',layout:question.layout || '',soundEnabled:question.soundEnabled === true,currentQuestionId:question.id,revision:current.revision+1}:current,{applyLocally:false});
 }
 export async function deleteRoomQuestion(room: string, id: string) {
   await loginHost();
@@ -126,11 +126,29 @@ export async function changeRoom(room: string,action: RoomAction) {
     await set(ref(db,`rooms/${room}/meta/title`), title);
     return;
   }
+  if (action.action === 'switch-question') {
+    const questions = await getRoomQuestions(room);
+    const result = await runTransaction(ref(db,'rooms/'+room+'/meta'), current => {
+      if (!current) return current;
+      if (current.owner !== user.uid) return;
+      if (current.revision !== action.revision) return;
+      if (current.open) return;
+      const currentIndex = questions.findIndex(q => q.id === current.currentQuestionId);
+      if (currentIndex === -1) return;
+      const targetIndex = action.direction === 'next' ? currentIndex + 1 : currentIndex - 1;
+      if (targetIndex < 0 || targetIndex >= questions.length) return;
+      const target = questions[targetIndex];
+      return {...current,question:target.text,template:target.template || 'mood',layout:target.layout || '',soundEnabled:target.soundEnabled === true,currentQuestionId:target.id,revision:current.revision+1};
+    },{applyLocally:false});
+    if (!result.committed) throw new Error('質問を切り替えられませんでした。受付を終了していること、切り替え先の質問があることを確認してください。');
+    await remove(ref(db,`rooms/${room}/pins/${action.revision}`));
+    return;
+  }
   const result = await runTransaction(ref(db,'rooms/'+room+'/meta'), current => {
     if (!current) return current;
     if (current.owner !== user.uid) return;
     if (action.action !== 'open' && current.revision !== action.revision) return;
-    return {...current,question:action.action==='question'?action.question?.trim():current.question,revision:current.revision+1};
+    return {...current,question:action.action==='question'?action.question?.trim():current.question,currentQuestionId:action.action==='question'?'':current.currentQuestionId,revision:current.revision+1};
   },{applyLocally:false});
   if (!result.committed) throw new Error('質問が更新されたか、主催者としてログインしていません。');
   // Delete only the old revision: new answers arriving after reset remain intact.
@@ -161,7 +179,7 @@ export async function watchRoom(room: string,onData:(data:RoomState)=>void,onErr
       if(stopped||ticket!==version)return;
       const value=pinsSnapshot.val();
       const selected=isHost?(value?.[user.uid]?{...value[user.uid],id:user.uid}:null):(value?{...value,id:user.uid}:null);
-      latest={title:meta.title,question:meta.question,template:meta.template || 'mood',layout:meta.layout || '',soundEnabled:meta.soundEnabled === true,revision:meta.revision,open:meta.open,showAnswers:meta.showAnswers !== false,isHost,
+      latest={title:meta.title,question:meta.question,template:meta.template || 'mood',layout:meta.layout || '',soundEnabled:meta.soundEnabled === true,currentQuestionId:meta.currentQuestionId || '',revision:meta.revision,open:meta.open,showAnswers:meta.showAnswers !== false,isHost,
         pins:isHost?Object.entries(value||{}).map(([id,point])=>({...point as {x:number;y:number},id})):[],selected};
       emit();
     },()=>onError('ピンの読み込みに失敗しました。参加用URLやログイン状態を確認してください。'));
