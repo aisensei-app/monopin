@@ -20,6 +20,9 @@ try{
  await assertFails(host2.ref(path+'/meta/question').set('改ざん'));
  await assertFails(student.ref(path+'/meta/open').set(false));
  await assertFails(host.ref(path+'/meta/owner').set('other'));
+ await assertSucceeds(host.ref(path+'/meta/currentQuestionId').set(''));
+ await assertSucceeds(host.ref(path+'/meta/currentQuestionId').set('0123456789ab'));
+ await assertFails(host.ref(path+'/meta/currentQuestionId').set('not-valid-id'));
  const pin={x:33.25,y:72.5,updatedAt:{'.sv':'timestamp'}};
  await assertSucceeds(student.ref(path+'/pins/1/student').set(pin));
  await assertFails(student.ref(path+'/pins/1/other').set(pin));
