@@ -10,6 +10,10 @@ type Screen = 'start' | 'new' | 'history';
 function dateLabel(value: number) {
   return new Intl.DateTimeFormat('ja-JP',{year:'numeric',month:'short',day:'numeric'}).format(value);
 }
+function questionPreview(question: string) {
+  if (!question) return 'まだ質問がありません。';
+  return question.length > 10 ? question.slice(0,10) + '…' : question;
+}
 
 export default function Lobby() {
   const [title,setTitle]=useState('');
@@ -92,9 +96,9 @@ export default function Lobby() {
         <button className="primary-button create-room-button" disabled={busy||!title.trim()}><Plus size={19}/>{busy?'部屋を準備しています…':'部屋をつくる'}<ArrowRight size={20}/></button></form></>}
 
       {screen==='history' && <><button className="back-button" type="button" onClick={()=>{setScreen('start');setSelectedRoom(null);setError('');}}><ArrowLeft size={17}/>選び直す</button>
-        <div className="room-history-heading"><strong>過去の部屋</strong><span>最大3件・作成から10日間</span></div>
+        <div className="room-history-heading"><strong>過去の部屋</strong><span>最大3件・作成から10日間で自動削除</span></div>
         {loadingRooms ? <p className="history-message">過去の部屋を読み込んでいます…</p> : savedRooms.length===0 ? <p className="history-message">保存されている部屋はありません。新しい部屋をつくると、ここから再利用できます。</p> : <div className="room-history-list">{savedRooms.map(room=><article className={`room-history-item ${selectedRoom?.id===room.id?'is-selected':''}`} key={room.id}>
-          <button className="room-history-main" type="button" onClick={()=>setSelectedRoom(room)}><strong>{room.title}</strong><span>{room.question}</span><small>{dateLabel(room.createdAt)} 作成</small></button>
+          <button className="room-history-main" type="button" onClick={()=>setSelectedRoom(room)}><strong>{room.title}</strong><span>{questionPreview(room.question)}</span><small>{dateLabel(room.createdAt)} 作成</small></button>
           <div className="room-history-actions" aria-label={`「${room.title}」の操作`}>
             <a className="room-action-button" href={roomUrl('editor',room.id)} onClick={()=>trackEvent('open_saved_room')} aria-label={`「${room.title}」の質問一覧を開く`} title="質問一覧"><Settings size={18}/></a>
             <button className="room-action-button" type="button" onClick={()=>copyRoom(room)} aria-label={`「${room.title}」をコピーして使う`} title="コピー"><Copy size={18}/></button>
