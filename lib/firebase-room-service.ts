@@ -3,7 +3,7 @@ import { getAuth, signInAnonymously, GoogleAuthProvider, signInWithPopup, signOu
 import { getDatabase, ref, set, remove, get, update, onValue, runTransaction, serverTimestamp } from 'firebase/database';
 import type { RoomAction, RoomState } from './room-service';
 
-export type SavedRoom = { id: string; title: string; question: string; createdAt: number; expiresAt: number };
+export type SavedRoom = { id: string; title: string; questions: string[]; createdAt: number; expiresAt: number };
 export type QuestionTemplate = 'mood' | 'world' | 'japan' | 'matrix' | 'free' | 'image';
 export type RoomQuestion = { id: string; text: string; order: number; template?: QuestionTemplate; caption?: string; imageUrl?: string; layout?: string; soundEnabled?: boolean };
 const ROOM_PLACEHOLDER = '質問を準備してください';
@@ -62,8 +62,7 @@ async function cleanSavedRooms(uid: string) {
   return Promise.all(active.map(async room => {
     const questionsSnapshot = await get(ref(db,`roomQuestions/${room.id}`));
     const questions = Object.values(questionsSnapshot.val() || {}) as {text:string;order:number}[];
-    const first = questions.sort((a,b) => a.order - b.order)[0];
-    return {...room, question: first ? first.text : ''};
+    return {...room, questions: questions.sort((a,b) => a.order - b.order).map(q => q.text)};
   }));
 }
 export async function getSavedRooms(): Promise<SavedRoom[]> {
