@@ -58,7 +58,13 @@ async function cleanSavedRooms(uid: string) {
     for (const room of expired) { changes[`hostRooms/${uid}/${room.id}`] = null; changes[`rooms/${room.id}`] = null; }
     await update(ref(db),changes);
   }
-  return all.filter(room => room.expiresAt > now).sort((a,b) => b.createdAt - a.createdAt);
+  const active = all.filter(room => room.expiresAt > now).sort((a,b) => b.createdAt - a.createdAt);
+  return Promise.all(active.map(async room => {
+    const questionsSnapshot = await get(ref(db,`roomQuestions/${room.id}`));
+    const questions = Object.values(questionsSnapshot.val() || {}) as {text:string;order:number}[];
+    const first = questions.sort((a,b) => a.order - b.order)[0];
+    return {...room, question: first ? first.text : ''};
+  }));
 }
 export async function getSavedRooms(): Promise<SavedRoom[]> {
   await loginHost();
