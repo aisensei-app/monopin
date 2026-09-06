@@ -120,6 +120,12 @@ export async function changeRoom(room: string,action: RoomAction) {
     await set(ref(db,`rooms/${room}/meta/showAnswers`), action.visible !== false);
     return;
   }
+  if (action.action === 'title') {
+    const title = (action.title || '').trim();
+    if (!title || title.length > 20) throw new Error('部屋の名前は20文字以内で入力してください。');
+    await set(ref(db,`rooms/${room}/meta/title`), title);
+    return;
+  }
   const result = await runTransaction(ref(db,'rooms/'+room+'/meta'), current => {
     if (!current) return current;
     if (current.owner !== user.uid) return;
