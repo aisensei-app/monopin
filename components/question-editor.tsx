@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft,
   Check,
@@ -146,15 +146,48 @@ export default function QuestionEditor() {
       setBusy(false);
     }
   }
-  async function move(index: number, direction: -1 | 1) {
-    const target = index + direction;
-    if (target < 0 || target >= questions.length) return;
-    const next = [...questions];
-    [next[index], next[target]] = [next[target], next[index]];
-    setQuestions(next);
+  const dragRowRefs = useRef(new Map<string, HTMLElement>());
+  const dragInfo = useRef<{ id: string } | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  function handleDragPointerDown(
+    event: React.PointerEvent<HTMLButtonElement>,
+    id: string,
+  ) {
+    if (busy) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragInfo.current = { id };
+    setDraggingId(id);
+  }
+  function handleDragPointerMove(event: React.PointerEvent<HTMLButtonElement>) {
+    if (!dragInfo.current) return;
+    const draggedId = dragInfo.current.id;
+    const draggedIndex = questions.findIndex((q) => q.id === draggedId);
+    if (draggedIndex === -1) return;
+    const y = event.clientY;
+    for (let targetIndex = 0; targetIndex < questions.length; targetIndex++) {
+      const question = questions[targetIndex];
+      if (question.id === draggedId) continue;
+      const el = dragRowRefs.current.get(question.id);
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      const movingDown = targetIndex > draggedIndex;
+      if ((movingDown && y > mid) || (!movingDown && y < mid)) {
+        const next = [...questions];
+        const [item] = next.splice(draggedIndex, 1);
+        next.splice(targetIndex, 0, item);
+        setQuestions(next);
+        break;
+      }
+    }
+  }
+  async function handleDragPointerUp() {
+    if (!dragInfo.current) return;
+    dragInfo.current = null;
+    setDraggingId(null);
     try {
       const service = await import('@/lib/firebase-room-service');
-      await service.reorderRoomQuestions(room, next);
+      await service.reorderRoomQuestions(room, questions);
     } catch {
       setMessage('順番を変更できませんでした。');
       await refresh();
@@ -556,27 +589,30 @@ export default function QuestionEditor() {
             </p>
           ) : (
             questions.map((question, index) => (
-              <article className="prepared-question" key={question.id}>
+              <article
+                className={`prepared-question${draggingId === question.id ? ' is-dragging' : ''}`}
+                key={question.id}
+                ref={(el) => {
+                  if (el) dragRowRefs.current.set(question.id, el);
+                  else dragRowRefs.current.delete(question.id);
+                }}
+              >
                 <div className="question-order">
-                  <GripVertical size={17} />
+                  <button
+                    type="button"
+                    className="question-drag-handle"
+                    aria-label="ドラッグして並べ替え"
+                    onPointerDown={(e) => handleDragPointerDown(e, question.id)}
+                    onPointerMove={handleDragPointerMove}
+                    onPointerUp={handleDragPointerUp}
+                    onPointerCancel={handleDragPointerUp}
+                  >
+                    <GripVertical size={17} />
+                  </button>
                   <span>{index + 1}</span>
                 </div>
                 <strong>{question.text}</strong>
                 <div className="question-actions">
-                  <button
-                    aria-label="上へ移動"
-                    disabled={index === 0}
-                    onClick={() => move(index, -1)}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    aria-label="下へ移動"
-                    disabled={index === questions.length - 1}
-                    onClick={() => move(index, 1)}
-                  >
-                    ↓
-                  </button>
                   <button
                     aria-label="編集"
                     onClick={() => openComposer(question)}
