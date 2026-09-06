@@ -23,6 +23,9 @@ try{
  await assertSucceeds(host.ref(path+'/meta/currentQuestionId').set(''));
  await assertSucceeds(host.ref(path+'/meta/currentQuestionId').set('0123456789ab'));
  await assertFails(host.ref(path+'/meta/currentQuestionId').set('not-valid-id'));
+ await assertSucceeds(host.ref(path+'/meta/ended').set(true));
+ await assertSucceeds(host.ref(path+'/meta/ended').set(false));
+ await assertFails(host.ref(path+'/meta/ended').set('true'));
  const pin={x:33.25,y:72.5,updatedAt:{'.sv':'timestamp'}};
  await assertSucceeds(student.ref(path+'/pins/1/student').set(pin));
  await assertFails(student.ref(path+'/pins/1/other').set(pin));
