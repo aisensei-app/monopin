@@ -8,7 +8,7 @@ import { Wordmark } from '@/components/wordmark';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { QUESTION } from '@/lib/reactions';
 import { useEventRoom } from '@/hooks/use-event-room';
-import { roomFromLocation, roomUrl, cloudMode, loginHost } from '@/lib/room-service';
+import { roomFromLocation, roomUrl, cloudMode, loginHost, getRoomQuestions, type RoomQuestion } from '@/lib/room-service';
 import { defaultMoodPointsFor, type MoodPoint } from '@/components/mood-configurator';
 import type { QuestionTemplate } from '@/lib/firebase-room-service';
 import { AccountMenu } from '@/components/account-menu';
@@ -30,6 +30,7 @@ export default function HostPage() {
   const [titleMessage, setTitleMessage] = useState('');
   const [fullscreen, setFullscreen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [questions, setQuestions] = useState<RoomQuestion[]>([]);
   const [dockPos, setDockPos] = useState<{ x: number; y: number } | null>(null);
   const toolsWrapRef = useRef<HTMLDivElement>(null);
   const dockRef = useRef<HTMLDivElement>(null);
@@ -78,6 +79,12 @@ export default function HostPage() {
   return () => document.removeEventListener('fullscreenchange', update);
   }, []);
   useEffect(() => {
+    if (!room || !data?.isHost) return;
+    let cancelled = false;
+    getRoomQuestions(room).then((list) => { if (!cancelled) setQuestions(list); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [room, data?.isHost]);
+  useEffect(() => {
     if (!toolsOpen) return;
     const closeOnOutside = (e: MouseEvent) => { if (toolsWrapRef.current && !toolsWrapRef.current.contains(e.target as Node)) setToolsOpen(false); };
     const closeOnEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') setToolsOpen(false); };
@@ -88,10 +95,28 @@ export default function HostPage() {
   const total = data?.pins.length || 0;
   let moodPoints:MoodPoint[]|undefined;
   try { moodPoints = data?.template === 'mood' && data.layout ? (JSON.parse(data.layout) as MoodPoint[]) : undefined; } catch { moodPoints=defaultMoodPointsFor(4); }
+  const hasValidCurrent = !!data?.currentQuestionId && questions.some(q => q.id === data.currentQuestionId);
+  const currentQuestionIndex = hasValidCurrent ? questions.findIndex(q => q.id === data!.currentQuestionId) : -1;
+  const canSwitch = hasValidCurrent && !data?.open;
+  const canPrevQuestion = canSwitch && currentQuestionIndex > 0;
+  const canNextQuestion = canSwitch && currentQuestionIndex < questions.length - 1;
+  function switchTitle(direction: 'prev' | 'next') {
+    if (!hasValidCurrent) return '保存した質問と対応していないため切り替えられません。質問一覧から選び直してください。';
+    if (data?.open) return '受付中は切り替えられません。先に受付を終了してください。';
+    if (direction === 'prev' && currentQuestionIndex <= 0) return 'これより前の質問はありません';
+    if (direction === 'next' && currentQuestionIndex >= questions.length - 1) return 'これより後の質問はありません';
+    return direction === 'prev' ? '前の質問に切り替え' : '次の質問に切り替え';
+  }
   async function update(action: 'reset' | 'question' | 'open' | 'visibility') {
     setBusy(true); setMessage('');
     try { await mutate({ action, question: draft, open: !data?.open, visible: !data?.showAnswers }); setConfirm(false); setEditing(false); }
     catch { setMessage('更新できませんでした。接続を確認して、もう一度お試しください。'); }
+    finally { setBusy(false); }
+  }
+  async function switchQuestion(direction: 'prev' | 'next') {
+    setBusy(true); setMessage('');
+    try { await mutate({ action: 'switch-question', direction }); }
+    catch (err) { setMessage(err instanceof Error ? err.message : '質問を切り替えられませんでした。'); }
     finally { setBusy(false); }
   }
   async function saveTitle() {
@@ -115,7 +140,7 @@ export default function HostPage() {
       <header className="host-header"><Wordmark href={homeUrl} /><span className="header-divider" /><span className="eyebrow">{data?.title || 'みんなのピンボード'}</span><div className="header-actions"><span className="anonymous-label">匿名で回答</span><span className={`connection ${error ? 'offline' : ''}`}><span />{error ? '接続を確認中' : data ? data.open ? '回答受付中' : '受付終了' : '接続中'}</span><AccountMenu /></div></header>
       <div className="host-layout">
         <section className="results-panel" aria-labelledby="host-question">
-          <div className="host-meta-row"><span /><div className="question-switcher" aria-label="質問の切り替え(準備中)"><button type="button" disabled title="近日公開予定"><ChevronLeft size={16}/>前へ</button><button type="button" disabled title="近日公開予定">次へ<ChevronRight size={16}/></button></div><div className="total"><Users size={21} /><strong>{total}</strong><span>人が回答</span></div></div>
+          <div className="host-meta-row"><span /><div className="question-switcher" aria-label="質問の切り替え"><button type="button" onClick={() => switchQuestion('prev')} disabled={!canPrevQuestion || busy || mutating} title={switchTitle('prev')}><ChevronLeft size={16}/>前へ</button>{questions.length > 0 && <span className="question-switcher-count">{hasValidCurrent ? `${currentQuestionIndex + 1} / ${questions.length}` : `- / ${questions.length}`}</span>}<button type="button" onClick={() => switchQuestion('next')} disabled={!canNextQuestion || busy || mutating} title={switchTitle('next')}>次へ<ChevronRight size={16}/></button></div><div className="total"><Users size={21} /><strong>{total}</strong><span>人が回答</span></div></div>
           <h1 id="host-question">{data?.question || QUESTION}</h1>
           <div className="host-board-wrap"><PinBoard pins={data?.showAnswers === false ? [] : data?.pins || []} moodPoints={moodPoints} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} /></div>
           <div className="results-footnote" role="status">{error || message || (data?.showAnswers === false ? '回答は主催者画面で非表示です。参加者の回答は受け付けています。' : (total ? 'ピンが重なる場所ほど、色が濃くなります。' : 'まだピンはありません。QRコードから参加して、好きな場所をタップ。'))}</div>
