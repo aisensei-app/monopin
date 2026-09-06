@@ -33,6 +33,9 @@
           "createdAt": {
             ".validate": "newData.isNumber() && ((!data.exists() && newData.val() <= now) || newData.val() === data.val())"
           },
+          "currentQuestionId": {
+            ".validate": "newData.isString() && (newData.val() === '' || newData.val().matches(/^[a-f0-9]{12}$/))"
+          },
           "$other": {
             ".validate": false
           }
