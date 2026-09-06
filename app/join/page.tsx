@@ -47,7 +47,7 @@ export default function JoinPage() {
         <p className="student-instruction">画面をタップして、ピンしよう！</p>
         <PinBoard own={selected} pending={pending} onPlace={vote} disabled={pending !== null || !data || !room || !data.open || !!error} moodPoints={moodPoints} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} />
         <div className={`answer-status ${selected !== null ? 'is-sent' : ''}`} role="status" aria-live="polite">
-          {pending !== null ? <><LoaderCircle className="spinning" size={22} />ピンを送っています…</> : error || notice ? <span>{notice || error}</span> : !data ? <><LoaderCircle className="spinning" size={22} />質問に接続しています…</> : data?.open === false ? '受付は終了しました。ご参加ありがとうございました。' : selected !== null ? <><CheckCheck size={24} />ピンを置きました</> : 'ボードの好きな場所をタップしてください'}
+          {pending !== null ? <><LoaderCircle className="spinning" size={22} />ピンを送っています…</> : error || notice ? <span>{notice || error}</span> : !data ? <><LoaderCircle className="spinning" size={22} />質問に接続しています…</> : data?.open === false ? 'この質問の受付は終了しました。' : selected !== null ? <><CheckCheck size={24} />ピンを置きました</> : 'ボードの好きな場所をタップしてください'}
         </div>
         <p className="answer-hint">{selected !== null ? '別の場所をタップすると、ピンが移動します。' : '境界の上でも、端でも、好きな場所に置けます。'}</p>
       </section>
