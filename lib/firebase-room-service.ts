@@ -93,7 +93,13 @@ export async function getRoomQuestions(room: string): Promise<RoomQuestion[]> {
 export async function saveRoomQuestion(room: string, question: RoomQuestion) {
   await loginHost();
   await set(ref(services().db,`roomQuestions/${room}/${question.id}`),{text:question.text.trim(),order:question.order,template:question.template || 'mood',caption:question.caption?.trim() || '',imageUrl:question.imageUrl || '',layout:question.layout || '',soundEnabled:question.soundEnabled === true});
-  await runTransaction(ref(services().db,`rooms/${room}/meta`),current=>current?{...current,question:question.text.trim(),template:question.template || 'mood',layout:question.layout || '',soundEnabled:question.soundEnabled === true,currentQuestionId:question.id,revision:current.revision+1}:current,{applyLocally:false});
+  const questions = await getRoomQuestions(room);
+  await runTransaction(ref(services().db,`rooms/${room}/meta`),current=>{
+    if (!current) return current;
+    const hasValidCurrent = !!current.currentQuestionId && questions.some(q=>q.id===current.currentQuestionId);
+    if (hasValidCurrent && current.currentQuestionId !== question.id) return current;
+    return {...current,question:question.text.trim(),template:question.template || 'mood',layout:question.layout || '',soundEnabled:question.soundEnabled === true,currentQuestionId:question.id,revision:current.revision+1};
+  },{applyLocally:false});
 }
 export async function deleteRoomQuestion(room: string, id: string) {
   await loginHost();
