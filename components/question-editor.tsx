@@ -72,10 +72,11 @@ export default function QuestionEditor() {
   const [soundEnabled, setSoundEnabled] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [questionsLoaded, setQuestionsLoaded] = useState(false);
   useEffect(() => {
     const code = roomFromLocation();
     setRoom(code);
-    if (!code || !cloudMode) return;
+    if (!code || !cloudMode) { setQuestionsLoaded(true); return; }
     Promise.all([
       import('@/lib/firebase-room-service'),
       import('@/lib/room-service'),
@@ -89,7 +90,8 @@ export default function QuestionEditor() {
       })
       .catch(() =>
         setMessage('質問を読み込めませんでした。接続を確認してください。'),
-      );
+      )
+      .finally(() => setQuestionsLoaded(true));
   }, []);
   async function refresh() {
     const service = await import('@/lib/firebase-room-service');
@@ -583,7 +585,9 @@ export default function QuestionEditor() {
           </section>
         )}
         <div className="prepared-questions">
-          {questions.length === 0 ? (
+          {!questionsLoaded ? (
+            <p className="history-message">質問を読み込んでいます…</p>
+          ) : questions.length === 0 ? (
             <p className="history-message">
               まだ質問はありません。「質問を追加」から準備しましょう。
             </p>
