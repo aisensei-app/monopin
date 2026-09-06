@@ -146,7 +146,7 @@ export default function HostPage() {
           <div className="results-footnote" role="status">{error || message || (data?.showAnswers === false ? '回答は主催者画面で非表示です。参加者の回答は受け付けています。' : (total ? 'ピンが重なる場所ほど、色が濃くなります。' : 'まだピンはありません。QRコードから参加して、好きな場所をタップ。'))}</div>
         </section>
         <aside className="participation-panel">
-          <div className="join-card"><span className="eyebrow">スマホで参加</span><h2>読み取って、<br />気持ちを教えてください。</h2><div className="qr-frame">{joinUrl && <QRCodeSVG value={joinUrl} size={208} level="M" fgColor="#254854" />}</div><p>カメラでQRコードを読み取るだけ。<br />名前の入力は必要ありません。</p><div className="join-link"><span>{joinUrl || '接続準備中…'}</span><button onClick={copyLink} disabled={!joinUrl} aria-label="参加用URLをコピー">{copied ? <Check size={18} /> : <Copy size={18} />}</button></div><span className="network-note">{localOnly ? 'お試し中：このPCと同じWi-Fiで参加できます。' : '離れた場所からも、このURLで参加できます。'}</span></div>
+          <div className="join-card"><span className="eyebrow">スマホで参加</span><h2>読み取って、<br />ピンしよう！</h2><div className="qr-frame">{joinUrl && <QRCodeSVG value={joinUrl} size={208} level="M" fgColor="#254854" />}</div><p>カメラでQRコードを読み取るだけ。<br />名前の入力は必要ありません。</p><div className="join-link"><span>{joinUrl || '接続準備中…'}</span><button onClick={copyLink} disabled={!joinUrl} aria-label="参加用URLをコピー">{copied ? <Check size={18} /> : <Copy size={18} />}</button></div></div>
           <a className="preview-link" href={roomUrl('join',room)} target="_blank" rel="noopener noreferrer"><span>このPCで回答を試す</span><ArrowUpRight size={21} /></a>
           <p className="preview-note">別タブで学生の画面が開きます</p>
         </aside>
@@ -163,7 +163,7 @@ export default function HostPage() {
           <label htmlFor="question-draft">質問文</label>
           <textarea id="question-draft" value={draft} maxLength={160} disabled={!!data?.open} onChange={(e) => setDraft(e.target.value)} />
           <p>{data?.open ? '受付中は質問を変更できません。先に受付を終了してください。' : '更新すると、現在の回答は新しい質問用に切り替わります。'}</p>
-          {!data?.open && <a className="text-button" href={roomUrl('editor',room)}><SlidersHorizontal size={16}/>画面・詳細を設定</a>}
+          
           <button className="primary-button" disabled={busy || !!data?.open || !draft.trim()}>{busy ? '更新中…' : '更新'}</button>
         </form>
       </aside>}
