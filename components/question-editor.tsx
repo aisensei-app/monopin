@@ -6,6 +6,7 @@ import {
   Copy,
   GripVertical,
   ImagePlus,
+  LoaderCircle,
   LockKeyhole,
   Pencil,
   Plus,
@@ -254,7 +255,7 @@ export default function QuestionEditor() {
           <ArrowLeft size={17} />
           部屋一覧
         </a>
-        <h1 className={title ? undefined : 'editor-title-loading'}>{title || ' '}</h1>
+        <h1 className={title ? undefined : 'editor-title-loading'}>{title || <LoaderCircle className="spinning" size={24} />}</h1>
         <button
           type="button"
           className="editor-add-button"
@@ -586,7 +587,7 @@ export default function QuestionEditor() {
         )}
         <div className="prepared-questions">
           {!questionsLoaded ? (
-            <p className="history-message">質問を読み込んでいます…</p>
+            <p className="history-message loading-note"><LoaderCircle className="spinning" size={18} />質問を読み込んでいます…</p>
           ) : questions.length === 0 ? (
             <p className="history-message">
               まだ質問はありません。「質問を追加」から準備しましょう。
