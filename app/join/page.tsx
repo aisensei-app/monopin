@@ -44,12 +44,12 @@ export default function JoinPage() {
       <section className="student-card" aria-labelledby="question">
         <div className="question-index"><span>01</span> {data?.title || 'ピンで回答'}</div>
         <h1 id="question">{data?.question || QUESTION}</h1>
-        <p className="student-instruction">自分に近い場所をタップしてください。</p>
+        <p className="student-instruction">画面をタップして、ピンしよう！</p>
         <PinBoard own={selected} pending={pending} onPlace={vote} disabled={pending !== null || !data || !room || !data.open || !!error} moodPoints={moodPoints} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} />
         <div className={`answer-status ${selected !== null ? 'is-sent' : ''}`} role="status" aria-live="polite">
           {pending !== null ? <><LoaderCircle className="spinning" size={22} />ピンを送っています…</> : error || notice ? <span>{notice || error}</span> : !data ? <><LoaderCircle className="spinning" size={22} />質問に接続しています…</> : data?.open === false ? '受付は終了しました。ご参加ありがとうございました。' : selected !== null ? <><CheckCheck size={24} />ピンを置きました</> : 'ボードの好きな場所をタップしてください'}
         </div>
-        <p className="answer-hint">{selected !== null ? '別の場所をタップすると、ピンが移動します。' : '表情は目印です。真ん中や端にも置けます。'}</p>
+        <p className="answer-hint">{selected !== null ? '別の場所をタップすると、ピンが移動します。' : '境界の上でも、端でも、好きな場所に置けます。'}</p>
       </section>
       <footer className="student-footer">名前の入力は不要です。先生の画面には、みんなのピンが表示されます。</footer>
     </main>
