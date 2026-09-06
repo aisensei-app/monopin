@@ -36,6 +36,9 @@
           "currentQuestionId": {
             ".validate": "newData.isString() && (newData.val() === '' || newData.val().matches(/^[a-f0-9]{12}$/))"
           },
+          "ended": {
+            ".validate": "newData.isBoolean()"
+          },
           "$other": {
             ".validate": false
           }
