@@ -80,7 +80,7 @@ export async function createRoom(title: string) {
   const room = crypto.randomUUID().replaceAll('-','').slice(0,24);
   const createdAt = Date.now();
   await update(ref(db),{
-    [`rooms/${room}/meta`]:{owner:user.uid,title:title.trim(),question:ROOM_PLACEHOLDER,template:'mood',layout:'',soundEnabled:false,revision:1,open:false,showAnswers:true,currentQuestionId:'',createdAt:serverTimestamp()},
+    [`rooms/${room}/meta`]:{owner:user.uid,title:title.trim(),question:ROOM_PLACEHOLDER,template:'mood',layout:'',soundEnabled:false,revision:1,open:false,showAnswers:true,currentQuestionId:'',ended:false,createdAt:serverTimestamp()},
     [`hostRooms/${user.uid}/${room}`]:{title:title.trim(),question:ROOM_PLACEHOLDER,createdAt,expiresAt:createdAt + ROOM_RETENTION_MS},
   });
   return room;
@@ -124,6 +124,10 @@ export async function changeRoom(room: string,action: RoomAction) {
   }
   if (action.action === 'visibility') {
     await set(ref(db,`rooms/${room}/meta/showAnswers`), action.visible !== false);
+    return;
+  }
+  if (action.action === 'ended') {
+    await set(ref(db,`rooms/${room}/meta/ended`), action.ended === true);
     return;
   }
   if (action.action === 'title') {
@@ -185,7 +189,7 @@ export async function watchRoom(room: string,onData:(data:RoomState)=>void,onErr
       if(stopped||ticket!==version)return;
       const value=pinsSnapshot.val();
       const selected=isHost?(value?.[user.uid]?{...value[user.uid],id:user.uid}:null):(value?{...value,id:user.uid}:null);
-      latest={title:meta.title,question:meta.question,template:meta.template || 'mood',layout:meta.layout || '',soundEnabled:meta.soundEnabled === true,currentQuestionId:meta.currentQuestionId || '',revision:meta.revision,open:meta.open,showAnswers:meta.showAnswers !== false,isHost,
+      latest={title:meta.title,question:meta.question,template:meta.template || 'mood',layout:meta.layout || '',soundEnabled:meta.soundEnabled === true,currentQuestionId:meta.currentQuestionId || '',ended:meta.ended === true,revision:meta.revision,open:meta.open,showAnswers:meta.showAnswers !== false,isHost,
         pins:isHost?Object.entries(value||{}).map(([id,point])=>({...point as {x:number;y:number},id})):[],selected};
       emit();
     },()=>onError('ピンの読み込みに失敗しました。参加用URLやログイン状態を確認してください。'));
