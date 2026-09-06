@@ -40,14 +40,14 @@ export default function JoinPage() {
   if (!room) return <main className="student-shell"><section className="student-card"><h1>参加用URLからお入りください</h1><p>主催者から届いたQRコードか、チャットに貼られた参加URLを開いてください。</p></section></main>;
   return (
     <main className="student-shell">
-      <header className="student-header"><Wordmark href={typeof window === 'undefined' ? '#' : window.location.href} /><div className="student-header-actions"><span className="eyebrow">{data?.open === false ? '受付終了' : '参加者の画面'}</span>{data?.soundEnabled && <button type="button" className="sound-mute-button" aria-label={muted?'効果音を出す':'効果音を消す'} aria-pressed={muted} onClick={()=>setMuted(value=>!value)}>{muted?<VolumeX size={18}/>:<Volume2 size={18}/>}</button>}</div></header>
+      <header className="student-header"><Wordmark href={typeof window === 'undefined' ? '#' : window.location.href} /><div className="student-header-actions"><span className="eyebrow">{data?.ended ? '終了' : data?.open === false ? '受付終了' : '参加者の画面'}</span>{data?.soundEnabled && <button type="button" className="sound-mute-button" aria-label={muted?'効果音を出す':'効果音を消す'} aria-pressed={muted} onClick={()=>setMuted(value=>!value)}>{muted?<VolumeX size={18}/>:<Volume2 size={18}/>}</button>}</div></header>
       <section className="student-card" aria-labelledby="question">
         <div className="question-index"><span>01</span> {data?.title || 'ピンで回答'}</div>
         <h1 id="question">{data?.question || QUESTION}</h1>
         <p className="student-instruction">画面をタップして、ピンしよう！</p>
         <PinBoard own={selected} pending={pending} onPlace={vote} disabled={pending !== null || !data || !room || !data.open || !!error} moodPoints={moodPoints} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} />
         <div className={`answer-status ${selected !== null ? 'is-sent' : ''}`} role="status" aria-live="polite">
-          {pending !== null ? <><LoaderCircle className="spinning" size={22} />ピンを送っています…</> : error || notice ? <span>{notice || error}</span> : !data ? <><LoaderCircle className="spinning" size={22} />質問に接続しています…</> : data?.open === false ? 'この質問の受付は終了しました。' : selected !== null ? <><CheckCheck size={24} />ピンを置きました</> : 'ボードの好きな場所をタップしてください'}
+          {pending !== null ? <><LoaderCircle className="spinning" size={22} />ピンを送っています…</> : error || notice ? <span>{notice || error}</span> : !data ? <><LoaderCircle className="spinning" size={22} />質問に接続しています…</> : data?.ended ? 'ご参加ありがとうございました。' : data?.open === false ? 'この質問の受付は終了しました。' : selected !== null ? <><CheckCheck size={24} />ピンを置きました</> : 'ボードの好きな場所をタップしてください'}
         </div>
         <p className="answer-hint">{selected !== null ? '別の場所をタップすると、ピンが移動します。' : '境界の上でも、端でも、好きな場所に置けます。'}</p>
       </section>
