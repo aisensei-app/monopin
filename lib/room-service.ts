@@ -1,7 +1,7 @@
 import type { PinState } from './pinboard';
-export type RoomState = PinState & { title: string; layout?: string; template?: string; soundEnabled?: boolean; open: boolean; showAnswers?: boolean; isHost: boolean };
-export type RoomAction = { action: 'vote' | 'reset' | 'question' | 'open' | 'visibility' | 'title'; x?: number; y?: number; question?: string; open?: boolean; visible?: boolean; revision?: number; title?: string };
-export type { SavedRoom } from './firebase-room-service';
+export type RoomState = PinState & { title: string; layout?: string; template?: string; soundEnabled?: boolean; open: boolean; showAnswers?: boolean; isHost: boolean; currentQuestionId?: string };
+export type RoomAction = { action: 'vote' | 'reset' | 'question' | 'open' | 'visibility' | 'title' | 'switch-question'; x?: number; y?: number; question?: string; open?: boolean; visible?: boolean; revision?: number; title?: string; direction?: 'prev' | 'next' };
+export type { SavedRoom, RoomQuestion } from './firebase-room-service';
 export const cloudMode = process.env.NEXT_PUBLIC_ROOM_BACKEND === 'firebase';
 
 export function roomUrl(view: 'home' | 'host' | 'join' | 'editor', room = '', forSharing = false) {
@@ -36,6 +36,10 @@ export async function createRoom(title: string): Promise<string> {
 export async function getSavedRooms() {
   if (!cloudMode) return [];
   return (await import('./firebase-room-service')).getSavedRooms();
+}
+export async function getRoomQuestions(room: string) {
+  if (!cloudMode) return [];
+  return (await import('./firebase-room-service')).getRoomQuestions(room);
 }
 export async function deleteSavedRoom(room: string) {
   if (!cloudMode) return;
