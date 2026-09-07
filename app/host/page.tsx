@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescripti
 import { QUESTION } from '@/lib/reactions';
 import { useEventRoom } from '@/hooks/use-event-room';
 import { roomFromLocation, roomUrl, cloudMode, loginHost, getRoomQuestions, type RoomQuestion } from '@/lib/room-service';
-import { defaultMoodPointsFor, type MoodPoint } from '@/components/mood-configurator';
+import { parseMoodLayout, type MoodPoint } from '@/components/mood-configurator';
 import type { QuestionTemplate } from '@/lib/firebase-room-service';
 import { AccountMenu } from '@/components/account-menu';
 
@@ -94,7 +94,12 @@ export default function HostPage() {
   }, [toolsOpen]);
   const total = data?.pins.length || 0;
   let moodPoints:MoodPoint[]|undefined;
-  try { moodPoints = data?.template === 'mood' && data.layout ? (JSON.parse(data.layout) as MoodPoint[]) : undefined; } catch { moodPoints=defaultMoodPointsFor(4); }
+  let moodTextOnly = false;
+  if (data?.template === 'mood' && data.layout) {
+    const parsedMood = parseMoodLayout(data.layout);
+    moodPoints = parsedMood.points;
+    moodTextOnly = parsedMood.textOnly;
+  }
   const hasValidCurrent = !!data?.currentQuestionId && questions.some(q => q.id === data.currentQuestionId);
   const currentQuestionIndex = hasValidCurrent ? questions.findIndex(q => q.id === data!.currentQuestionId) : -1;
   const canSwitch = hasValidCurrent && !data?.open;
@@ -142,7 +147,7 @@ export default function HostPage() {
         <section className="results-panel" aria-labelledby="host-question">
           <div className="host-meta-row"><span /><div className="question-switcher" aria-label="質問の切り替え"><button type="button" onClick={() => switchQuestion('prev')} disabled={!canPrevQuestion || busy || mutating} title={switchTitle('prev')}><ChevronLeft size={16}/>前へ</button>{questions.length > 0 && <span className="question-switcher-count">{hasValidCurrent ? `${currentQuestionIndex + 1} / ${questions.length}` : `- / ${questions.length}`}</span>}<button type="button" onClick={() => switchQuestion('next')} disabled={!canNextQuestion || busy || mutating} title={switchTitle('next')}>次へ<ChevronRight size={16}/></button></div><div className="total"><Users size={21} /><strong>{total}</strong><span>人が回答</span></div></div>
           <h1 id="host-question">{data?.question || QUESTION}</h1>
-          <div className="host-board-wrap"><PinBoard pins={data?.showAnswers === false ? [] : data?.pins || []} moodPoints={moodPoints} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} /></div>
+          <div className="host-board-wrap"><PinBoard pins={data?.showAnswers === false ? [] : data?.pins || []} moodPoints={moodPoints} moodTextOnly={moodTextOnly} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} /></div>
           <div className="results-footnote" role="status">{error || message || (data?.showAnswers === false ? '回答は主催者画面で非表示です。参加者の回答は受け付けています。' : (total ? 'ピンが重なる場所ほど、色が濃くなります。' : 'まだピンはありません。QRコードから参加して、好きな場所をタップ。'))}</div>
         </section>
         <aside className="participation-panel">
