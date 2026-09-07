@@ -143,7 +143,7 @@ export default function HostPage() {
           <div className="host-meta-row"><span /><div className="question-switcher" aria-label="質問の切り替え"><button type="button" onClick={() => switchQuestion('prev')} disabled={!canPrevQuestion || busy || mutating} title={switchTitle('prev')}><ChevronLeft size={16}/>前へ</button>{questions.length > 0 && <span className="question-switcher-count">{hasValidCurrent ? `${currentQuestionIndex + 1} / ${questions.length}` : `- / ${questions.length}`}</span>}<button type="button" onClick={() => switchQuestion('next')} disabled={!canNextQuestion || busy || mutating} title={switchTitle('next')}>次へ<ChevronRight size={16}/></button></div><div className="total"><Users size={21} /><strong>{total}</strong><span>人が回答</span></div></div>
           <h1 id="host-question">{data?.question || QUESTION}</h1>
           <div className="host-board-wrap"><PinBoard pins={data?.showAnswers === false ? [] : data?.pins || []} moodPoints={moodPoints} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} /></div>
-          <div className="results-footnote" role="status">{error || message || (data?.showAnswers === false ? '回答は主催者画面で非表示です。参加者の回答は受け付けています。' : data?.template === 'choice' ? (total ? '各選択肢の下に選んだ人数が表示されます。' : 'まだ回答はありません。QRコードから参加して、選択肢をタップ。') : (total ? 'ピンが重なる場所ほど、色が濃くなります。' : 'まだピンはありません。QRコードから参加して、好きな場所をタップ。'))}</div>
+          <div className="results-footnote" role="status">{error || message || (data?.showAnswers === false ? '回答は主催者画面で非表示です。参加者の回答は受け付けています。' : data?.template === 'choice' ? (total ? '選んだ人のピンが、各カードの下に表示されます。' : 'まだ回答はありません。QRコードから参加して、カードにピンを。') : (total ? 'ピンが重なる場所ほど、色が濃くなります。' : 'まだピンはありません。QRコードから参加して、好きな場所をタップ。'))}</div>
         </section>
         <aside className="participation-panel">
           <div className="join-card"><span className="eyebrow">スマホで参加</span><h2>読み取って、<br />ピンしよう！</h2><div className="qr-frame">{joinUrl && <QRCodeSVG value={joinUrl} size={208} level="M" fgColor="#254854" />}</div><p>カメラでQRコードを読み取るだけ。<br />名前の入力は必要ありません。</p><div className="join-link"><span>{joinUrl || '接続準備中…'}</span><button onClick={copyLink} disabled={!joinUrl} aria-label="参加用URLをコピー">{copied ? <Check size={18} /> : <Copy size={18} />}</button></div></div>
@@ -172,4 +172,4 @@ export default function HostPage() {
       <AlertDialog open={confirm} onOpenChange={(open) => { if (!busy) setConfirm(open); }}><AlertDialogContent><AlertDialogTitle>回答をリセットしますか？</AlertDialogTitle><AlertDialogDescription>今の{total}人分の回答を消して、同じ質問にもう一度回答できるようにします。</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel disabled={busy}>キャンセル</AlertDialogCancel><AlertDialogAction disabled={busy} onClick={() => update('reset')}>{busy ? 'リセット中…' : 'リセットする'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </main>
   );
-}
+          }
