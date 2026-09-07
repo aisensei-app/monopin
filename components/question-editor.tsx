@@ -34,20 +34,31 @@ import {
   type MoodPoint,
 } from '@/components/mood-configurator';
 import {
+  defaultChoiceOptionsFor,
+  parseChoiceOptions,
+  ChoiceConfigurator,
+} from '@/components/choice-configurator';
+import { CharCounter } from '@/components/char-counter';
+import {
   TemplatePreview,
   parseDrawing,
   parseMapBubbles,
   parseMatrixLabels,
+  parseMatrixTextBoxes,
+  resolveMapChoice,
   type DrawingStroke,
   type MapBubble,
+  type MapChoice,
   type MatrixLabels,
 } from '@/components/template-preview';
 import { AccountMenu } from '@/components/account-menu';
+import worldMap from '@/assets/world-map.png';
+import japanMap from '@/assets/japan-map.png';
 
 const templates: { id: QuestionTemplate; name: string; hint: string }[] = [
   { id: 'mood', name: '気分', hint: '4つの表情' },
-  { id: 'world', name: '世界地図', hint: '世界のどこ？' },
-  { id: 'japan', name: '日本地図', hint: '日本のどこ？' },
+  { id: 'choice', name: '文章選択', hint: '文章から1つを選ぶ' },
+  { id: 'map', name: '地図', hint: '地図のどこ？' },
   { id: 'matrix', name: '2×2', hint: '2つの軸で整理' },
   { id: 'free', name: '自由ボード', hint: '自由にピンを置く' },
   { id: 'image', name: '画像を使う', hint: '写真・画像の上に置く' },
@@ -67,9 +78,13 @@ export default function QuestionEditor() {
   const [moodPoints, setMoodPoints] = useState<MoodPoint[]>(
     defaultMoodPointsFor(4),
   );
-  const [moodTextOnly, setMoodTextOnly] = useState(false);
+  const [choiceOptions, setChoiceOptions] = useState<string[]>(
+    defaultChoiceOptionsFor(4),
+  );
+  const [mapChoice, setMapChoice] = useState<MapChoice>('world');
   const [mapBubbles, setMapBubbles] = useState<MapBubble[]>([]);
   const [matrixLabels, setMatrixLabels] = useState<MatrixLabels>({});
+  const [matrixTextBoxes, setMatrixTextBoxes] = useState<MapBubble[]>([]);
   const [drawing, setDrawing] = useState<DrawingStroke[]>([]);
   const [drawingColor, setDrawingColor] = useState('#276877');
   const [drawingWidth, setDrawingWidth] = useState(4);
@@ -103,14 +118,16 @@ export default function QuestionEditor() {
   }
   const currentLayout = () =>
     template === 'mood'
-      ? JSON.stringify({ points: moodPoints, textOnly: moodTextOnly })
-      : template === 'world' || template === 'japan'
-        ? JSON.stringify({ bubbles: mapBubbles })
-        : template === 'free'
-          ? JSON.stringify({ drawing })
-          : template === 'matrix'
-            ? JSON.stringify({ matrixLabels })
-            : '';
+      ? JSON.stringify(moodPoints)
+      : template === 'choice'
+        ? JSON.stringify({ options: choiceOptions })
+        : template === 'map'
+          ? JSON.stringify({ mapChoice, bubbles: mapBubbles })
+          : template === 'free'
+            ? JSON.stringify({ drawing })
+            : template === 'matrix'
+              ? JSON.stringify({ matrixLabels, matrixTextBoxes })
+              : '';
   async function save() {
     if (!draft.trim() || !room) return;
     setBusy(true);
@@ -206,7 +223,9 @@ export default function QuestionEditor() {
       </main>
     );
   const openComposer = (question?: RoomQuestion) => {
-    const questionTemplate = question?.template || 'mood';
+    const rawTemplate = question?.template || 'mood';
+    const questionTemplate: QuestionTemplate =
+      rawTemplate === 'world' || rawTemplate === 'japan' ? 'map' : rawTemplate;
     setEditing(question?.id || null);
     setDraft(question?.text || '');
     setTemplate(questionTemplate);
@@ -214,18 +233,23 @@ export default function QuestionEditor() {
     setImageUrl(question?.imageUrl || '');
     setSoundEnabled(question?.soundEnabled === true);
     try {
-      if (questionTemplate === 'mood') {
-        const parsedMood = parseMoodLayout(question?.layout);
-        setMoodPoints(parsedMood.points);
-        setMoodTextOnly(parsedMood.textOnly);
-      } else {
-        setMoodPoints(defaultMoodPointsFor(4));
-        setMoodTextOnly(false);
-      }
+      setMoodPoints(
+        questionTemplate === 'mood'
+          ? parseMoodLayout(question?.layout)
+          : defaultMoodPointsFor(4),
+      );
+      setChoiceOptions(
+        questionTemplate === 'choice'
+          ? parseChoiceOptions(question?.layout)
+          : defaultChoiceOptionsFor(4),
+      );
       setMapBubbles(
-        questionTemplate === 'world' || questionTemplate === 'japan'
-          ? parseMapBubbles(question?.layout)
-          : [],
+        questionTemplate === 'map' ? parseMapBubbles(question?.layout) : [],
+      );
+      setMapChoice(
+        questionTemplate === 'map'
+          ? resolveMapChoice(rawTemplate, question?.layout)
+          : 'world',
       );
       setDrawing(
         questionTemplate === 'free' ? parseDrawing(question?.layout) : [],
@@ -235,12 +259,19 @@ export default function QuestionEditor() {
           ? parseMatrixLabels(question?.layout)
           : {},
       );
+      setMatrixTextBoxes(
+        questionTemplate === 'matrix'
+          ? parseMatrixTextBoxes(question?.layout)
+          : [],
+      );
     } catch {
       setMoodPoints(defaultMoodPointsFor(4));
-      setMoodTextOnly(false);
+      setChoiceOptions(defaultChoiceOptionsFor(4));
       setMapBubbles([]);
+      setMapChoice('world');
       setDrawing([]);
       setMatrixLabels({});
+      setMatrixTextBoxes([]);
     }
     setAdding(true);
     setStep(1);
@@ -250,14 +281,22 @@ export default function QuestionEditor() {
       ...mapBubbles,
       { id: crypto.randomUUID(), text: 'ここに入力', x: 50, y: 50 },
     ]);
+  const addTextBox = () =>
+    setMatrixTextBoxes([
+      ...matrixTextBoxes,
+      { id: crypto.randomUUID(), text: 'ここに入力', x: 50, y: 50 },
+    ]);
   const resetTemplateFields = () => {
     if (template === 'mood') {
       setMoodPoints(defaultMoodPointsFor(4));
-      setMoodTextOnly(false);
+    } else if (template === 'choice') {
+      setChoiceOptions(defaultChoiceOptionsFor(4));
     } else if (template === 'matrix') {
       setMatrixLabels({});
-    } else if (template === 'world' || template === 'japan') {
+      setMatrixTextBoxes([]);
+    } else if (template === 'map') {
       setMapBubbles([]);
+      setMapChoice('world');
     } else if (template === 'free') {
       setDrawing([]);
       setDrawingColor('#276877');
@@ -310,15 +349,18 @@ export default function QuestionEditor() {
               )}
             </div>
             {step === 1 && (
-              <textarea
-                id="question-text"
-                autoFocus
-                value={draft}
-                maxLength={160}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder="ここに質問を入力"
-                aria-label="質問"
-              />
+              <div className="field-with-counter field-with-counter-block">
+                <textarea
+                  id="question-text"
+                  autoFocus
+                  value={draft}
+                  maxLength={160}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder="ここに質問を入力"
+                  aria-label="質問"
+                />
+                <CharCounter value={draft} max={160} />
+              </div>
             )}
             {step === 2 && (
               <>
@@ -340,10 +382,10 @@ export default function QuestionEditor() {
                           <ImagePlus size={24} />
                         ) : item.id === 'mood' ? (
                           '🙂'
-                        ) : item.id === 'world' ? (
-                          '🌍'
-                        ) : item.id === 'japan' ? (
-                          '🗾'
+                        ) : item.id === 'choice' ? (
+                          '🔘'
+                        ) : item.id === 'map' ? (
+                          '🗺️'
                         ) : item.id === 'matrix' ? (
                           '＋'
                         ) : (
@@ -366,7 +408,9 @@ export default function QuestionEditor() {
                   bubbles={mapBubbles}
                   drawing={drawing}
                   matrixLabels={matrixLabels}
-                  moodTextOnly={moodTextOnly}
+                  textBoxes={matrixTextBoxes}
+                  mapChoice={mapChoice}
+                  choiceOptions={choiceOptions}
                   preview
                   interactivePreview
                   soundEnabled={soundEnabled}
@@ -388,125 +432,213 @@ export default function QuestionEditor() {
                   </button>
                 </div>
                 {template === 'mood' && (
-                  <MoodConfigurator
-                    points={moodPoints}
-                    onChange={setMoodPoints}
-                    textOnly={moodTextOnly}
-                    onTextOnlyChange={setMoodTextOnly}
-                  />
+                  <MoodConfigurator points={moodPoints} onChange={setMoodPoints} />
                 )}{' '}
-                {template === 'matrix' && (
-                  <section
-                    className="matrix-label-editor"
-                    aria-label="軸のラベルを編集"
-                  >
-                    <label>
-                      上
-                      <input
-                        value={matrixLabels.top || ''}
-                        maxLength={20}
-                        placeholder="高い"
-                        aria-label="上のラベル"
-                        onChange={(e) =>
-                          setMatrixLabels({
-                            ...matrixLabels,
-                            top: e.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                    <label>
-                      下
-                      <input
-                        value={matrixLabels.bottom || ''}
-                        maxLength={20}
-                        placeholder="低い"
-                        aria-label="下のラベル"
-                        onChange={(e) =>
-                          setMatrixLabels({
-                            ...matrixLabels,
-                            bottom: e.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                    <label>
-                      左
-                      <input
-                        value={matrixLabels.left || ''}
-                        maxLength={20}
-                        placeholder="低い"
-                        aria-label="左のラベル"
-                        onChange={(e) =>
-                          setMatrixLabels({
-                            ...matrixLabels,
-                            left: e.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                    <label>
-                      右
-                      <input
-                        value={matrixLabels.right || ''}
-                        maxLength={20}
-                        placeholder="高い"
-                        aria-label="右のラベル"
-                        onChange={(e) =>
-                          setMatrixLabels({
-                            ...matrixLabels,
-                            right: e.target.value,
-                          })
-                        }
-                      />
-                    </label>
-                  </section>
+                {template === 'choice' && (
+                  <ChoiceConfigurator
+                    options={choiceOptions}
+                    onChange={setChoiceOptions}
+                  />
                 )}
-                {(template === 'world' || template === 'japan') && (
-                  <section className="bubble-editor">
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={addBubble}
+                {template === 'matrix' && (
+                  <>
+                    <section
+                      className="matrix-label-editor"
+                      aria-label="軸のラベルを編集"
                     >
-                      <MessageCirclePlus size={17} />
-                      吹き出しを追加
-                    </button>
-                    {mapBubbles.map((bubble) => (
-                      <div className="bubble-row" key={bubble.id}>
-                        <input
-                          value={bubble.text}
-                          maxLength={30}
-                          aria-label="吹き出しの文字"
-                          onChange={(e) =>
-                            setMapBubbles(
-                              mapBubbles.map((item) =>
-                                item.id === bubble.id
-                                  ? { ...item, text: e.target.value }
-                                  : item,
-                              ),
-                            )
-                          }
-                        />
-                        <button
-                          type="button"
-                          aria-label="吹き出しを削除"
-                          onClick={() =>
-                            setMapBubbles(
-                              mapBubbles.filter(
-                                (item) => item.id !== bubble.id,
-                              ),
-                            )
-                          }
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
-                    <p>
-                      吹き出しを長押しして、そのまま好きな場所へ動かせます。
-                    </p>
-                  </section>
+                      <label>
+                        上
+                        <div className="field-with-counter">
+                          <input
+                            value={matrixLabels.top || ''}
+                            maxLength={20}
+                            placeholder="高い"
+                            aria-label="上のラベル"
+                            onChange={(e) =>
+                              setMatrixLabels({
+                                ...matrixLabels,
+                                top: e.target.value,
+                              })
+                            }
+                          />
+                          <CharCounter value={matrixLabels.top || ''} max={20} />
+                        </div>
+                      </label>
+                      <label>
+                        下
+                        <div className="field-with-counter">
+                          <input
+                            value={matrixLabels.bottom || ''}
+                            maxLength={20}
+                            placeholder="低い"
+                            aria-label="下のラベル"
+                            onChange={(e) =>
+                              setMatrixLabels({
+                                ...matrixLabels,
+                                bottom: e.target.value,
+                              })
+                            }
+                          />
+                          <CharCounter value={matrixLabels.bottom || ''} max={20} />
+                        </div>
+                      </label>
+                      <label>
+                        左
+                        <div className="field-with-counter">
+                          <input
+                            value={matrixLabels.left || ''}
+                            maxLength={20}
+                            placeholder="低い"
+                            aria-label="左のラベル"
+                            onChange={(e) =>
+                              setMatrixLabels({
+                                ...matrixLabels,
+                                left: e.target.value,
+                              })
+                            }
+                          />
+                          <CharCounter value={matrixLabels.left || ''} max={20} />
+                        </div>
+                      </label>
+                      <label>
+                        右
+                        <div className="field-with-counter">
+                          <input
+                            value={matrixLabels.right || ''}
+                            maxLength={20}
+                            placeholder="高い"
+                            aria-label="右のラベル"
+                            onChange={(e) =>
+                              setMatrixLabels({
+                                ...matrixLabels,
+                                right: e.target.value,
+                              })
+                            }
+                          />
+                          <CharCounter value={matrixLabels.right || ''} max={20} />
+                        </div>
+                      </label>
+                    </section>
+                    <section className="bubble-editor">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={addTextBox}
+                      >
+                        <MessageCirclePlus size={17} />
+                        テキストボックスを追加
+                      </button>
+                      {matrixTextBoxes.map((box) => (
+                        <div className="bubble-row" key={box.id}>
+                          <div className="field-with-counter">
+                            <input
+                              value={box.text}
+                              maxLength={30}
+                              aria-label="テキストボックスの文字"
+                              onChange={(e) =>
+                                setMatrixTextBoxes(
+                                  matrixTextBoxes.map((item) =>
+                                    item.id === box.id
+                                      ? { ...item, text: e.target.value }
+                                      : item,
+                                  ),
+                                )
+                              }
+                            />
+                            <CharCounter value={box.text} max={30} />
+                          </div>
+                          <button
+                            type="button"
+                            aria-label="テキストボックスを削除"
+                            onClick={() =>
+                              setMatrixTextBoxes(
+                                matrixTextBoxes.filter(
+                                  (item) => item.id !== box.id,
+                                ),
+                              )
+                            }
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                      <p>
+                        上下左右の軸ラベルはそのまま残り、テキストボックスは長押しして好きな場所へ動かせます。
+                      </p>
+                    </section>
+                  </>
+                )}
+                {template === 'map' && (
+                  <>
+                    <section
+                      className="map-choice-switcher"
+                      aria-label="地図の種類を選ぶ"
+                    >
+                      <button
+                        type="button"
+                        className={`map-choice-thumb ${mapChoice === 'world' ? 'is-selected' : ''}`}
+                        onClick={() => setMapChoice('world')}
+                      >
+                        <img src={worldMap as unknown as string} alt="" />
+                        <span>世界地図</span>
+                      </button>
+                      <button
+                        type="button"
+                        className={`map-choice-thumb ${mapChoice === 'japan' ? 'is-selected' : ''}`}
+                        onClick={() => setMapChoice('japan')}
+                      >
+                        <img src={japanMap as unknown as string} alt="" />
+                        <span>日本地図</span>
+                      </button>
+                    </section>
+                    <section className="bubble-editor">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={addBubble}
+                      >
+                        <MessageCirclePlus size={17} />
+                        吹き出しを追加
+                      </button>
+                      {mapBubbles.map((bubble) => (
+                        <div className="bubble-row" key={bubble.id}>
+                          <div className="field-with-counter">
+                            <input
+                              value={bubble.text}
+                              maxLength={30}
+                              aria-label="吹き出しの文字"
+                              onChange={(e) =>
+                                setMapBubbles(
+                                  mapBubbles.map((item) =>
+                                    item.id === bubble.id
+                                      ? { ...item, text: e.target.value }
+                                      : item,
+                                  ),
+                                )
+                              }
+                            />
+                            <CharCounter value={bubble.text} max={30} />
+                          </div>
+                          <button
+                            type="button"
+                            aria-label="吹き出しを削除"
+                            onClick={() =>
+                              setMapBubbles(
+                                mapBubbles.filter(
+                                  (item) => item.id !== bubble.id,
+                                ),
+                              )
+                            }
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                      <p>
+                        吹き出しを長押しして、そのまま好きな場所へ動かせます。
+                      </p>
+                    </section>
+                  </>
                 )}
                 {template === 'free' && (
                   <section
@@ -560,13 +692,16 @@ export default function QuestionEditor() {
                   bubbles={mapBubbles}
                   drawing={drawing}
                   matrixLabels={matrixLabels}
-                  moodTextOnly={moodTextOnly}
+                  textBoxes={matrixTextBoxes}
+                  mapChoice={mapChoice}
+                  choiceOptions={choiceOptions}
                   editable={
-                    template === 'world' ||
-                    template === 'japan' ||
-                    template === 'free'
+                    template === 'map' ||
+                    template === 'free' ||
+                    template === 'matrix'
                   }
                   onBubblesChange={setMapBubbles}
+                  onTextBoxesChange={setMatrixTextBoxes}
                   onDrawingChange={setDrawing}
                   drawingColor={drawingColor}
                   drawingWidth={drawingWidth}
