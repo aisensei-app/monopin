@@ -26,6 +26,10 @@ try{
  await assertSucceeds(host.ref(path+'/meta/ended').set(true));
  await assertSucceeds(host.ref(path+'/meta/ended').set(false));
  await assertFails(host.ref(path+'/meta/ended').set('true'));
+ await assertSucceeds(host.ref(path+'/meta/template').set('map'));
+ await assertSucceeds(host.ref(path+'/meta/template').set('choice'));
+ await assertSucceeds(host.ref(path+'/meta/template').set('world'));
+ await assertFails(host.ref(path+'/meta/template').set('not-a-template'));
  const pin={x:33.25,y:72.5,updatedAt:{'.sv':'timestamp'}};
  await assertSucceeds(student.ref(path+'/pins/1/student').set(pin));
  await assertFails(student.ref(path+'/pins/1/other').set(pin));
@@ -52,4 +56,3 @@ try{
  await assertSucceeds(host.ref(path).remove());
  console.log('PASS: Firebase rules deny anonymous room creation, cross-owner control, impersonation, listing, other answers, closed/stale votes, invalid coordinates, and private room history access.');
 }finally{await env.cleanup();}
-
