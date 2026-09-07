@@ -3,7 +3,7 @@ import { Minus, Plus } from 'lucide-react';
 import { CharCounter } from '@/components/char-counter';
 
 export const defaultChoiceOptions: string[] = [
-  '選択肢1', '選択肢2', '選択肢3', '選択肢4', '選択肢5', '選択肢6', '選択肢7', '選択肢8',
+  'カード1', 'カード2', 'カード3', 'カード4', 'カード5', 'カード6', 'カード7', 'カード8',
 ];
 export const defaultChoiceOptionsFor = (count: 4 | 6 | 8): string[] =>
   defaultChoiceOptions.slice(0, count);
@@ -47,15 +47,15 @@ export function ChoiceConfigurator({
           </button>
         </div>
       </div>
-      <p>4・6・8個から選べます。参加者はこの中から1つをタップして選びます。</p>
+      <p>4・6・8個から選べます。参加者はこの中から1枚のカードにピンを置いて選びます。</p>
       <div className="choice-option-list">
         {options.map((option, index) => (
           <div className="field-with-counter" key={index}>
             <input
-              aria-label={`${index + 1}番目の選択肢`}
+              aria-label={`${index + 1}枚目のカード`}
               value={option}
               maxLength={50}
-              placeholder={`選択肢${index + 1}`}
+              placeholder={`カード${index + 1}`}
               onChange={(e) => edit(index, e.target.value)}
             />
             <CharCounter value={option} max={50} />
