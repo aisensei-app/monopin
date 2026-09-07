@@ -21,6 +21,7 @@ export type MatrixLabels = {
   left?: string;
   right?: string;
 };
+export type MapChoice = 'world' | 'japan';
 
 export function parseMapBubbles(layout?: string): MapBubble[] {
   if (!layout) return [];
@@ -65,6 +66,32 @@ export function parseMatrixLabels(layout?: string): MatrixLabels {
   }
 }
 
+export function parseMatrixTextBoxes(layout?: string): MapBubble[] {
+  if (!layout) return [];
+  try {
+    const value = JSON.parse(layout) as { matrixTextBoxes?: MapBubble[] };
+    return Array.isArray(value.matrixTextBoxes)
+      ? value.matrixTextBoxes.filter((box) => typeof box?.text === 'string')
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+export function resolveMapChoice(
+  template: QuestionTemplate,
+  layout?: string,
+): MapChoice {
+  if (template === 'world' || template === 'japan') return template;
+  if (layout) {
+    try {
+      const value = JSON.parse(layout) as { mapChoice?: string };
+      if (value.mapChoice === 'japan') return 'japan';
+    } catch {}
+  }
+  return 'world';
+}
+
 export function TemplatePreview({
   template,
   moodPoints = [],
@@ -79,7 +106,13 @@ export function TemplatePreview({
   interactivePreview = false,
   soundEnabled = false,
   matrixLabels = {},
-  moodTextOnly = false,
+  textBoxes = [],
+  onTextBoxesChange,
+  mapChoice = 'world',
+  choiceOptions = [],
+  onChoiceSelect,
+  selectedChoiceIndex = null,
+  choiceCounts,
 }: {
   template: QuestionTemplate;
   moodPoints?: MoodPoint[];
@@ -94,11 +127,22 @@ export function TemplatePreview({
   interactivePreview?: boolean;
   soundEnabled?: boolean;
   matrixLabels?: MatrixLabels;
-  moodTextOnly?: boolean;
+  textBoxes?: MapBubble[];
+  onTextBoxesChange?: (next: MapBubble[]) => void;
+  mapChoice?: MapChoice;
+  choiceOptions?: string[];
+  onChoiceSelect?: (index: number) => void;
+  selectedChoiceIndex?: number | null;
+  choiceCounts?: number[];
 }) {
   const canvas = useRef<HTMLDivElement>(null);
   const [pins, setPins] = useState<{ id: number; x: number; y: number }[]>([]);
-  const move = (id: string, event: React.PointerEvent<HTMLButtonElement>) => {
+  const moveItem = (
+    items: MapBubble[],
+    onChange: ((next: MapBubble[]) => void) | undefined,
+    id: string,
+    event: React.PointerEvent<HTMLButtonElement>,
+  ) => {
     if (!editable || !canvas.current) return;
     const element = event.currentTarget;
     element.setPointerCapture(event.pointerId);
@@ -113,10 +157,8 @@ export function TemplatePreview({
         7,
         Math.min(93, ((pointer.clientY - rect.top) / rect.height) * 100),
       );
-      onBubblesChange?.(
-        bubbles.map((bubble) =>
-          bubble.id === id ? { ...bubble, x, y } : bubble,
-        ),
+      onChange?.(
+        items.map((item) => (item.id === id ? { ...item, x, y } : item)),
       );
     };
     const finish = () => {
@@ -126,7 +168,7 @@ export function TemplatePreview({
     element.addEventListener('pointermove', update);
     element.addEventListener('pointerup', finish);
   };
-  const isMap = template === 'world' || template === 'japan';
+  const isMap = template === 'world' || template === 'japan' || template === 'map';
   const pointFromEvent = (event: React.PointerEvent<HTMLDivElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     return {
@@ -206,7 +248,12 @@ export function TemplatePreview({
     );
   };
   const placePreviewPin = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!interactivePreview || (template === 'free' && editable)) return;
+    if (
+      !interactivePreview ||
+      (template === 'free' && editable) ||
+      template === 'choice'
+    )
+      return;
     const rect = event.currentTarget.getBoundingClientRect();
     addPreviewPin(
       ((event.clientX - rect.left) / rect.width) * 100,
@@ -216,7 +263,7 @@ export function TemplatePreview({
   return (
     <div
       ref={canvas}
-      className={`template-board template-${template} ${interactivePreview ? 'is-interactive-preview' : ''} ${template === 'free' && editable ? 'is-drawing' : ''}`}
+      className={`template-board template-${template} ${isMap ? `map-choice-${mapChoice}` : ''} ${interactivePreview ? 'is-interactive-preview' : ''} ${template === 'free' && editable ? 'is-drawing' : ''}`}
       aria-label={`${template}のプレビュー`}
       role="application"
       tabIndex={interactivePreview ? 0 : undefined}
@@ -225,7 +272,8 @@ export function TemplatePreview({
         if (
           event.key === 'Enter' &&
           interactivePreview &&
-          !(template === 'free' && editable)
+          !(template === 'free' && editable) &&
+          template !== 'choice'
         )
           addPreviewPin(50, 50);
       }}
@@ -239,9 +287,7 @@ export function TemplatePreview({
         >
           {moodPoints.slice(0, 8).map((point, index) => (
             <div key={index}>
-              {!moodTextOnly && (
-                <span className="mood-emoji">{point.emoji}</span>
-              )}
+              <span className="mood-emoji">{point.emoji}</span>
               <small>{point.label}</small>
             </div>
           ))}
@@ -250,9 +296,7 @@ export function TemplatePreview({
       {isMap && (
         <img
           className="map-art"
-          src={
-            (template === 'world' ? worldMap : japanMap) as unknown as string
-          }
+          src={(mapChoice === 'japan' ? japanMap : worldMap) as unknown as string}
           alt=""
         />
       )}
@@ -306,6 +350,36 @@ export function TemplatePreview({
           )}
         </>
       )}
+      {template === 'choice' && (
+        <div
+          className="choice-options"
+          data-count={Math.min(8, choiceOptions.length)}
+        >
+          {choiceOptions.map((option, index) => {
+            const selected = selectedChoiceIndex === index;
+            const count = choiceCounts?.[index];
+            return (
+              <button
+                type="button"
+                key={index}
+                className={`choice-option ${selected ? 'is-selected' : ''}`}
+                disabled={!onChoiceSelect}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onChoiceSelect?.(index);
+                }}
+              >
+                <span className="choice-option-text">
+                  {option || `選択肢${index + 1}`}
+                </span>
+                {typeof count === 'number' && (
+                  <span className="choice-option-count">{count}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
       {isMap &&
         bubbles.map((bubble) => (
           <button
@@ -316,13 +390,32 @@ export function TemplatePreview({
             onClick={(event) => event.stopPropagation()}
             onPointerDown={(event) => {
               event.stopPropagation();
-              move(bubble.id, event);
+              moveItem(bubbles, onBubblesChange, bubble.id, event);
             }}
             aria-label={
               editable ? `${bubble.text || '吹き出し'}を動かす` : undefined
             }
           >
             {bubble.text || 'テキスト'}
+          </button>
+        ))}
+      {template === 'matrix' &&
+        textBoxes.map((box) => (
+          <button
+            type="button"
+            className={`matrix-textbox ${editable ? 'is-editable' : ''}`}
+            key={box.id}
+            style={{ left: `${box.x}%`, top: `${box.y}%` }}
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+              moveItem(textBoxes, onTextBoxesChange, box.id, event);
+            }}
+            aria-label={
+              editable ? `${box.text || 'テキストボックス'}を動かす` : undefined
+            }
+          >
+            {box.text || 'テキスト'}
           </button>
         ))}
       {pins.map((pin) => (
