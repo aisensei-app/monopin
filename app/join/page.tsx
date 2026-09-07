@@ -9,7 +9,7 @@ import { useEventRoom } from '@/hooks/use-event-room';
 import { roomFromLocation } from '@/lib/room-service';
 import { QUESTION } from '@/lib/reactions';
 import { trackEvent } from '@/components/analytics';
-import { defaultMoodPointsFor, type MoodPoint } from '@/components/mood-configurator';
+import { parseMoodLayout, type MoodPoint } from '@/components/mood-configurator';
 import type { QuestionTemplate } from '@/lib/firebase-room-service';
 import { playPinSound } from '@/lib/pin-sound';
 
@@ -36,7 +36,12 @@ export default function JoinPage() {
   }
   const selected = data?.selected ?? null;
   let moodPoints:MoodPoint[]|undefined;
-  try { moodPoints = data?.template === 'mood' && data.layout ? (JSON.parse(data.layout) as MoodPoint[]) : undefined; } catch { moodPoints=defaultMoodPointsFor(4); }
+  let moodTextOnly = false;
+  if (data?.template === 'mood' && data.layout) {
+    const parsedMood = parseMoodLayout(data.layout);
+    moodPoints = parsedMood.points;
+    moodTextOnly = parsedMood.textOnly;
+  }
   if (!room) return <main className="student-shell"><section className="student-card"><h1>参加用URLからお入りください</h1><p>主催者から届いたQRコードか、チャットに貼られた参加URLを開いてください。</p></section></main>;
   return (
     <main className="student-shell">
@@ -45,7 +50,7 @@ export default function JoinPage() {
         <div className="question-index"><span>01</span> {data?.title || 'ピンで回答'}</div>
         <h1 id="question">{data?.question || QUESTION}</h1>
         <p className="student-instruction">画面をタップして、ピンしよう！</p>
-        <PinBoard own={selected} pending={pending} onPlace={vote} disabled={pending !== null || !data || !room || !data.open || !!error} moodPoints={moodPoints} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} />
+        <PinBoard own={selected} pending={pending} onPlace={vote} disabled={pending !== null || !data || !room || !data.open || !!error} moodPoints={moodPoints} moodTextOnly={moodTextOnly} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} />
         <div className={`answer-status ${selected !== null ? 'is-sent' : ''}`} role="status" aria-live="polite">
           {pending !== null ? <><LoaderCircle className="spinning" size={22} />ピンを送っています…</> : error || notice ? <span>{notice || error}</span> : !data ? <><LoaderCircle className="spinning" size={22} />質問に接続しています…</> : data?.ended ? 'ご参加ありがとうございました。' : data?.open === false ? 'この質問の受付は終了しました。' : selected !== null ? <><CheckCheck size={24} />ピンを置きました</> : 'ボードの好きな場所をタップしてください'}
         </div>
