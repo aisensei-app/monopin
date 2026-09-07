@@ -113,6 +113,9 @@ export function TemplatePreview({
   onChoiceSelect,
   selectedChoiceIndex = null,
   choiceCounts,
+  choicePins,
+  onChoicePlace,
+  choiceDisabled = false,
 }: {
   template: QuestionTemplate;
   moodPoints?: MoodPoint[];
@@ -134,6 +137,9 @@ export function TemplatePreview({
   onChoiceSelect?: (index: number) => void;
   selectedChoiceIndex?: number | null;
   choiceCounts?: number[];
+  choicePins?: { id: number | string; x: number; y: number }[];
+  onChoicePlace?: (point: { x: number; y: number }) => void;
+  choiceDisabled?: boolean;
 }) {
   const canvas = useRef<HTMLDivElement>(null);
   const [pins, setPins] = useState<{ id: number; x: number; y: number }[]>([]);
@@ -351,67 +357,9 @@ export function TemplatePreview({
         </>
       )}
       {template === 'choice' && (
-        <div
-          className="choice-options"
-          data-count={Math.min(8, choiceOptions.length)}
-        >
-          {choiceOptions.map((option, index) => {
-            const selected = selectedChoiceIndex === index;
-            const count = choiceCounts?.[index];
-            return (
-              <button
-                type="button"
-                key={index}
-                className={`choice-option ${selected ? 'is-selected' : ''}`}
-                disabled={!onChoiceSelect}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onChoiceSelect?.(index);
-                }}
-              >
-                <span className="choice-option-text">
-                  {option || `カード${index + 1}`}
-                </span>
-                {(selected || (typeof count === 'number' && count > 0)) && (
-                  <span
-                    className="choice-option-pins"
-                    aria-label={[
-                      selected ? '自分のピン' : '',
-                      typeof count === 'number' && count > 0
-                        ? `${count}人がピンを置きました`
-                        : '',
-                    ]
-                      .filter(Boolean)
-                      .join('、')}
-                  >
-                    {selected && (
-                      <MapPin
-                        className="choice-pin-mini is-own"
-                        strokeWidth={1.8}
-                        aria-hidden="true"
-                      />
-                    )}
-                    {typeof count === 'number' &&
-                      count > 0 &&
-                      Array.from({ length: Math.min(count, 5) }).map((_, i) => (
-                        <MapPin
-                          key={i}
-                          className="choice-pin-mini"
-                          strokeWidth={1.8}
-                          aria-hidden="true"
-                        />
-                      ))}
-                    {typeof count === 'number' && count > 5 && (
-                      <span className="choice-pin-more" aria-hidden="true">
-                        +{count - 5}
-                      </span>
-                    )}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <ChoicePinCards options={choiceOptions} pins={choicePins || pins}
+          onPlace={onChoicePlace || (interactivePreview ? point => addPreviewPin(point.x, point.y) : undefined)}
+          disabled={choiceDisabled} />
       )}
       {isMap &&
         bubbles.map((bubble) => (
@@ -451,7 +399,7 @@ export function TemplatePreview({
             {box.text || 'テキスト'}
           </button>
         ))}
-      {pins.map((pin) => (
+      {(template === 'choice' ? [] : pins).map((pin) => (
         <span
           className="preview-pin"
           key={pin.id}
@@ -464,4 +412,63 @@ export function TemplatePreview({
       ))}
     </div>
   );
+}
+
+/** Coordinates use the existing two-row storage grid, independently of card pixel sizes. */
+export function encodeChoicePoint(index: number, count: number, point: { x: number; y: number }) {
+  const columns = Math.max(2, count / 2);
+  const inside = (value: number) => Math.max(0.0001, Math.min(99.9999, value));
+  return { x: ((index % columns) * 100 + inside(point.x)) / columns,
+    y: (Math.floor(index / columns) * 100 + inside(point.y)) / 2 };
+}
+export function decodeChoicePoint(count: number, point: { x: number; y: number }) {
+  const columns = Math.max(2, count / 2);
+  const column = Math.min(columns - 1, Math.floor(point.x * columns / 100));
+  const row = Math.min(1, Math.floor(point.y * 2 / 100));
+  return { index: row * columns + column, x: point.x * columns - column * 100, y: point.y * 2 - row * 100 };
+}
+
+function ChoicePinCards({ options, pins, onPlace, disabled = false }: {
+  options: string[];
+  pins: { id: number | string; x: number; y: number }[];
+  onPlace?: (point: { x: number; y: number }) => void;
+  disabled?: boolean;
+}) {
+  const [cursor, setCursor] = useState({ index: 0, x: 50, y: 50 });
+  const [keyboard, setKeyboard] = useState(false);
+  return <div className="choice-options" data-count={options.length}>
+    {options.map((option, index) => <div className="choice-card" key={index}>
+      <div className="choice-card-text">{option || `カード${index + 1}`}</div>
+      {onPlace && <button type="button" className="choice-card-hit" disabled={disabled}
+        aria-label={`カード${index + 1}：${option}。好きな位置にピンを置く。矢印キーで移動、Enterで送信。`}
+        onFocus={() => setCursor({ index, x: 50, y: 50 })}
+        onBlur={() => setKeyboard(false)}
+        onClick={(event) => {
+          event.stopPropagation();
+          const rect = event.currentTarget.getBoundingClientRect();
+          const point = event.detail === 0 ? cursor : {
+            x: (event.clientX - rect.left) / rect.width * 100,
+            y: (event.clientY - rect.top) / rect.height * 100,
+          };
+          if (event.detail !== 0) setKeyboard(false);
+          onPlace(encodeChoicePoint(index, options.length, point));
+        }}
+        onKeyDown={(event) => {
+          if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+          event.preventDefault(); event.stopPropagation(); setKeyboard(true);
+          const step = event.shiftKey ? 1 : 5;
+          setCursor(p => ({ index, x: Math.max(0, Math.min(100, p.x + (event.key === 'ArrowRight' ? step : event.key === 'ArrowLeft' ? -step : 0))),
+            y: Math.max(0, Math.min(100, p.y + (event.key === 'ArrowDown' ? step : event.key === 'ArrowUp' ? -step : 0))) }));
+        }} />}
+      <div className="board-pin-layer" aria-hidden="true">
+        {pins.map(pin => ({ ...decodeChoicePoint(options.length, pin), id: pin.id })).filter(pin => pin.index === index).map(pin =>
+          <span className="board-pin" key={pin.id} style={{ left: `${pin.x}%`, top: `${pin.y}%` }}>
+            <span className="pin-halo" />
+            <MapPin className="pin-marker" viewBox="2 1 20 21" preserveAspectRatio="xMidYMax meet" strokeWidth={1.8} />
+            <span className="pin-touchpoint" />
+          </span>)}
+        {keyboard && cursor.index === index && <span className="board-cursor" style={{ left: `${cursor.x}%`, top: `${cursor.y}%` }} />}
+      </div>
+    </div>)}
+  </div>;
 }
