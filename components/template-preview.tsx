@@ -79,6 +79,7 @@ export function TemplatePreview({
   interactivePreview = false,
   soundEnabled = false,
   matrixLabels = {},
+  moodTextOnly = false,
 }: {
   template: QuestionTemplate;
   moodPoints?: MoodPoint[];
@@ -93,6 +94,7 @@ export function TemplatePreview({
   interactivePreview?: boolean;
   soundEnabled?: boolean;
   matrixLabels?: MatrixLabels;
+  moodTextOnly?: boolean;
 }) {
   const canvas = useRef<HTMLDivElement>(null);
   const [pins, setPins] = useState<{ id: number; x: number; y: number }[]>([]);
@@ -237,7 +239,9 @@ export function TemplatePreview({
         >
           {moodPoints.slice(0, 8).map((point, index) => (
             <div key={index}>
-              <span className="mood-emoji">{point.emoji}</span>
+              {!moodTextOnly && (
+                <span className="mood-emoji">{point.emoji}</span>
+              )}
               <small>{point.label}</small>
             </div>
           ))}
