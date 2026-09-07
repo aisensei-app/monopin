@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import { ArrowUpRight, RotateCcw, Users, Maximize, Minimize, Pencil, Copy, Check, Eye, EyeOff, List, Home, SlidersHorizontal, X, ChevronLeft, ChevronRight, GripVertical, CircleCheck, Undo2 } from 'lucide-react';
+import { LoaderCircle, ArrowUpRight, RotateCcw, Users, Maximize, Minimize, Pencil, Copy, Check, Eye, EyeOff, List, Home, SlidersHorizontal, X, ChevronLeft, ChevronRight, GripVertical, CircleCheck, Undo2 } from 'lucide-react';
 import { PinBoard } from '@/components/pin-board';
 import { Wordmark } from '@/components/wordmark';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
@@ -15,8 +15,8 @@ import { AccountMenu } from '@/components/account-menu';
 import { CharCounter } from '@/components/char-counter';
 
 export default function HostPage() {
-  const [room,setRoom] = useState('');
-  const { data, error, mutate, mutating } = useEventRoom(room);
+  const [room,setRoom] = useState<string | null>(null);
+  const { data, error, mutate, mutating } = useEventRoom(room || '');
   const [homeUrl,setHomeUrl] = useState('/');
   const [joinUrl, setJoinUrl] = useState('');
   const [localOnly, setLocalOnly] = useState(true);
@@ -133,7 +133,9 @@ export default function HostPage() {
     try { await navigator.clipboard.writeText(joinUrl); setCopied(true); setTimeout(() => setCopied(false), 2000); }
     catch { setMessage('参加用URLを選択してコピーしてください。'); }
   }
+  if (room === null) return <main className="student-shell"><div className="board-loading" role="status"><LoaderCircle className="spinning" size={24} />読み込んでいます…</div></main>;
     if (!room) return <main className="student-shell"><p>主催者用URLから開くか、新しい部屋を作成してください。</p><a className="preview-link" href={homeUrl}>部屋をつくる</a></main>;
+  if (!data) return <main className="student-shell"><header className="student-header"><Wordmark href={homeUrl} /></header><section className="student-card"><div className="board-loading" role="status">{error || <><LoaderCircle className="spinning" size={24} />読み込んでいます…</>}</div>{error && <button className="primary-button" onClick={() => window.location.reload()}>再読み込み</button>}</section></main>;
   if (data && !data.isHost) return <main className="student-shell"><section className="student-card"><h1>主催者専用の画面です</h1><p>この部屋を作成したブラウザー・アカウントで開いてください。</p>{cloudMode && <button className="primary-button" onClick={async()=>{try{await loginHost();window.location.reload();}catch{setMessage('ログインできませんでした。もう一度お試しください。');}}}>主催者としてGoogleでログイン</button>}<p role="status">{message}</p><a className="preview-link" href={roomUrl('join',room)}>参加者として開く</a><a className="text-button" href={homeUrl}>別の部屋を作成する</a></section></main>;
   return (
     <main className="host-shell">
@@ -143,7 +145,7 @@ export default function HostPage() {
           <div className="host-meta-row"><span /><div className="question-switcher" aria-label="質問の切り替え"><button type="button" onClick={() => switchQuestion('prev')} disabled={!canPrevQuestion || busy || mutating} title={switchTitle('prev')}><ChevronLeft size={16}/>前へ</button>{questions.length > 0 && <span className="question-switcher-count">{hasValidCurrent ? `${currentQuestionIndex + 1} / ${questions.length}` : `- / ${questions.length}`}</span>}<button type="button" onClick={() => switchQuestion('next')} disabled={!canNextQuestion || busy || mutating} title={switchTitle('next')}>次へ<ChevronRight size={16}/></button></div><div className="total"><Users size={21} /><strong>{total}</strong><span>人が回答</span></div></div>
           <h1 id="host-question">{data?.question || QUESTION}</h1>
           <div className="host-board-wrap"><PinBoard pins={data?.showAnswers === false ? [] : data?.pins || []} moodPoints={moodPoints} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} /></div>
-          <div className="results-footnote" role="status">{error || message || (data?.showAnswers === false ? '回答は主催者画面で非表示です。参加者の回答は受け付けています。' : data?.template === 'choice' ? (total ? '選んだ人のピンが、各カードの下に表示されます。' : 'まだ回答はありません。QRコードから参加して、カードにピンを。') : (total ? 'ピンが重なる場所ほど、色が濃くなります。' : 'まだピンはありません。QRコードから参加して、好きな場所をタップ。'))}</div>
+          <div className="results-footnote" role="status">{error || message || (data?.showAnswers === false ? '回答は主催者画面で非表示です。参加者の回答は受け付けています。' : data?.template === 'choice' ? (total ? 'みんなが置いた位置にピンが表示されます。' : 'まだ回答はありません。QRコードから参加して、カードにピンを。') : (total ? 'ピンが重なる場所ほど、色が濃くなります。' : 'まだピンはありません。QRコードから参加して、好きな場所をタップ。'))}</div>
         </section>
         <aside className="participation-panel">
           <div className="join-card"><span className="eyebrow">スマホで参加</span><h2>読み取って、<br />ピンしよう！</h2><div className="qr-frame">{joinUrl && <QRCodeSVG value={joinUrl} size={208} level="M" fgColor="#254854" />}</div><p>カメラでQRコードを読み取るだけ。<br />名前の入力は必要ありません。</p><div className="join-link"><span>{joinUrl || '接続準備中…'}</span><button onClick={copyLink} disabled={!joinUrl} aria-label="参加用URLをコピー">{copied ? <Check size={18} /> : <Copy size={18} />}</button></div></div>

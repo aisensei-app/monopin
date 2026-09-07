@@ -65,27 +65,13 @@ export function PinBoard({
   const landmarks = moodLandmarks(points.length);
   const isChoice = template === 'choice';
   const choiceOptions = isChoice ? parseChoiceOptions(layout) : [];
-  const choiceLandmarks = moodLandmarks(choiceOptions.length || 4);
-  const ownChoicePoint = pending || own;
-  const selectedChoiceIndex =
-    isChoice && ownChoicePoint
-      ? choiceIndexFromPoint(choiceOptions.length || 4, ownChoicePoint)
-      : null;
-  const choiceCounts = isChoice && !onPlace
-    ? choiceOptions.map(
-        (_, index) =>
-          pins.filter(
-            (pin) => choiceIndexFromPoint(choiceOptions.length || 4, pin) === index,
-          ).length,
-      )
-    : undefined;
   const visiblePins = onPlace
     ? pending || own
       ? [{ ...(pending || own)!, id: 0 }]
       : []
     : pins;
   return (
-    <div className={`pin-canvas ${onPlace ? 'is-interactive' : 'is-display'}`}>
+    <div className={`pin-canvas ${isChoice ? 'is-choice' : ''} ${onPlace ? 'is-interactive' : 'is-display'}`}>
       <div
         className={`board-art ${isChoice ? 'has-choice' : ''}`}
         aria-hidden={isChoice ? undefined : 'true'}
@@ -121,13 +107,9 @@ export function PinBoard({
           <TemplatePreview
             template={template}
             choiceOptions={choiceOptions}
-            selectedChoiceIndex={selectedChoiceIndex}
-            choiceCounts={choiceCounts}
-            onChoiceSelect={
-              onPlace && !disabled
-                ? (index) => onPlace(choiceLandmarks[index])
-                : undefined
-            }
+            choicePins={visiblePins}
+            onChoicePlace={onPlace}
+            choiceDisabled={disabled}
           />
         )}
       </div>
