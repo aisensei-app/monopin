@@ -12,6 +12,7 @@ import {
   Plus,
   Trash2,
   MessageCirclePlus,
+  RotateCcw,
   X,
 } from 'lucide-react';
 import { Wordmark } from '@/components/wordmark';
@@ -29,6 +30,7 @@ import type {
 import {
   defaultMoodPointsFor,
   MoodConfigurator,
+  parseMoodLayout,
   type MoodPoint,
 } from '@/components/mood-configurator';
 import {
@@ -65,6 +67,7 @@ export default function QuestionEditor() {
   const [moodPoints, setMoodPoints] = useState<MoodPoint[]>(
     defaultMoodPointsFor(4),
   );
+  const [moodTextOnly, setMoodTextOnly] = useState(false);
   const [mapBubbles, setMapBubbles] = useState<MapBubble[]>([]);
   const [matrixLabels, setMatrixLabels] = useState<MatrixLabels>({});
   const [drawing, setDrawing] = useState<DrawingStroke[]>([]);
@@ -100,7 +103,7 @@ export default function QuestionEditor() {
   }
   const currentLayout = () =>
     template === 'mood'
-      ? JSON.stringify(moodPoints)
+      ? JSON.stringify({ points: moodPoints, textOnly: moodTextOnly })
       : template === 'world' || template === 'japan'
         ? JSON.stringify({ bubbles: mapBubbles })
         : template === 'free'
@@ -211,11 +214,14 @@ export default function QuestionEditor() {
     setImageUrl(question?.imageUrl || '');
     setSoundEnabled(question?.soundEnabled === true);
     try {
-      setMoodPoints(
-        questionTemplate === 'mood' && question?.layout
-          ? JSON.parse(question.layout)
-          : defaultMoodPointsFor(4),
-      );
+      if (questionTemplate === 'mood') {
+        const parsedMood = parseMoodLayout(question?.layout);
+        setMoodPoints(parsedMood.points);
+        setMoodTextOnly(parsedMood.textOnly);
+      } else {
+        setMoodPoints(defaultMoodPointsFor(4));
+        setMoodTextOnly(false);
+      }
       setMapBubbles(
         questionTemplate === 'world' || questionTemplate === 'japan'
           ? parseMapBubbles(question?.layout)
@@ -231,6 +237,7 @@ export default function QuestionEditor() {
       );
     } catch {
       setMoodPoints(defaultMoodPointsFor(4));
+      setMoodTextOnly(false);
       setMapBubbles([]);
       setDrawing([]);
       setMatrixLabels({});
@@ -243,6 +250,21 @@ export default function QuestionEditor() {
       ...mapBubbles,
       { id: crypto.randomUUID(), text: 'ここに入力', x: 50, y: 50 },
     ]);
+  const resetTemplateFields = () => {
+    if (template === 'mood') {
+      setMoodPoints(defaultMoodPointsFor(4));
+      setMoodTextOnly(false);
+    } else if (template === 'matrix') {
+      setMatrixLabels({});
+    } else if (template === 'world' || template === 'japan') {
+      setMapBubbles([]);
+    } else if (template === 'free') {
+      setDrawing([]);
+      setDrawingColor('#276877');
+      setDrawingWidth(4);
+    }
+    setSoundEnabled(false);
+  };
   const complete = [!!draft.trim(), templateSelected, templateSelected];
   return (
     <main className="editor-shell">
@@ -344,6 +366,7 @@ export default function QuestionEditor() {
                   bubbles={mapBubbles}
                   drawing={drawing}
                   matrixLabels={matrixLabels}
+                  moodTextOnly={moodTextOnly}
                   preview
                   interactivePreview
                   soundEnabled={soundEnabled}
@@ -352,10 +375,24 @@ export default function QuestionEditor() {
             )}
             {step === 3 && (
               <>
+                <div className="composer-step3-toolbar">
+                  <p className="composer-label">詳細を設定</p>
+                  <button
+                    type="button"
+                    className="icon-button reset-fields-button"
+                    title="入力をリセットします"
+                    aria-label="入力をリセットします"
+                    onClick={resetTemplateFields}
+                  >
+                    <RotateCcw size={16} />
+                  </button>
+                </div>
                 {template === 'mood' && (
                   <MoodConfigurator
                     points={moodPoints}
                     onChange={setMoodPoints}
+                    textOnly={moodTextOnly}
+                    onTextOnlyChange={setMoodTextOnly}
                   />
                 )}{' '}
                 {template === 'matrix' && (
@@ -523,6 +560,7 @@ export default function QuestionEditor() {
                   bubbles={mapBubbles}
                   drawing={drawing}
                   matrixLabels={matrixLabels}
+                  moodTextOnly={moodTextOnly}
                   editable={
                     template === 'world' ||
                     template === 'japan' ||
