@@ -3,11 +3,14 @@ import { useState } from 'react';
 import { MapPin } from 'lucide-react';
 import { pointFromRect, type BoardPin, type Point } from '@/lib/pinboard';
 import { defaultMoodPointsFor, type MoodPoint } from '@/components/mood-configurator';
+import { parseChoiceOptions } from '@/components/choice-configurator';
 import {
   TemplatePreview,
   parseDrawing,
   parseMapBubbles,
   parseMatrixLabels,
+  parseMatrixTextBoxes,
+  resolveMapChoice,
 } from '@/components/template-preview';
 import type { QuestionTemplate } from '@/lib/firebase-room-service';
 
@@ -19,6 +22,20 @@ const moodLandmarks = (count: number) => {
   }));
 };
 
+const choiceIndexFromPoint = (count: number, point: { x: number; y: number }) => {
+  const landmarks = moodLandmarks(count);
+  let closest = 0;
+  let bestDistance = Infinity;
+  landmarks.forEach((landmark, index) => {
+    const distance = Math.hypot(landmark.x - point.x, landmark.y - point.y);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      closest = index;
+    }
+  });
+  return closest;
+};
+
 export function PinBoard({
   pins = [],
   own,
@@ -26,7 +43,6 @@ export function PinBoard({
   onPlace,
   disabled = false,
   moodPoints,
-  moodTextOnly = false,
   template = 'mood',
   layout = '',
 }: {
@@ -36,7 +52,6 @@ export function PinBoard({
   onPlace?: (point: Point) => void;
   disabled?: boolean;
   moodPoints?: MoodPoint[];
-  moodTextOnly?: boolean;
   template?: QuestionTemplate;
   layout?: string;
 }) {
@@ -48,6 +63,22 @@ export function PinBoard({
   } | null>(null);
   const points = moodPoints?.length ? moodPoints : defaultMoodPointsFor(4);
   const landmarks = moodLandmarks(points.length);
+  const isChoice = template === 'choice';
+  const choiceOptions = isChoice ? parseChoiceOptions(layout) : [];
+  const choiceLandmarks = moodLandmarks(choiceOptions.length || 4);
+  const ownChoicePoint = pending || own;
+  const selectedChoiceIndex =
+    isChoice && ownChoicePoint
+      ? choiceIndexFromPoint(choiceOptions.length || 4, ownChoicePoint)
+      : null;
+  const choiceCounts = isChoice && !onPlace
+    ? choiceOptions.map(
+        (_, index) =>
+          pins.filter(
+            (pin) => choiceIndexFromPoint(choiceOptions.length || 4, pin) === index,
+          ).length,
+      )
+    : undefined;
   const visiblePins = onPlace
     ? pending || own
       ? [{ ...(pending || own)!, id: 0 }]
@@ -55,7 +86,10 @@ export function PinBoard({
     : pins;
   return (
     <div className={`pin-canvas ${onPlace ? 'is-interactive' : 'is-display'}`}>
-      <div className="board-art" aria-hidden="true">
+      <div
+        className={`board-art ${isChoice ? 'has-choice' : ''}`}
+        aria-hidden={isChoice ? undefined : 'true'}
+      >
         {template === 'mood' && (
           <>
             {landmarks.map((position, index) => (
@@ -65,9 +99,7 @@ export function PinBoard({
                 style={{ left: `${position.x}%`, top: `${position.y}%` }}
               >
                 <>
-                  {!moodTextOnly && (
-                    <span className="mood-emoji">{points[index].emoji}</span>
-                  )}
+                  <span className="mood-emoji">{points[index].emoji}</span>
                   <span>{points[index].label}</span>
                 </>
               </div>
@@ -75,16 +107,31 @@ export function PinBoard({
             <span className="board-center-mark" />
           </>
         )}
-        {template !== 'mood' && (
+        {template !== 'mood' && !isChoice && (
           <TemplatePreview
             template={template}
             bubbles={parseMapBubbles(layout)}
             drawing={parseDrawing(layout)}
             matrixLabels={parseMatrixLabels(layout)}
+            textBoxes={parseMatrixTextBoxes(layout)}
+            mapChoice={resolveMapChoice(template, layout)}
+          />
+        )}
+        {isChoice && (
+          <TemplatePreview
+            template={template}
+            choiceOptions={choiceOptions}
+            selectedChoiceIndex={selectedChoiceIndex}
+            choiceCounts={choiceCounts}
+            onChoiceSelect={
+              onPlace && !disabled
+                ? (index) => onPlace(choiceLandmarks[index])
+                : undefined
+            }
           />
         )}
       </div>
-      {onPlace && (
+      {!isChoice && onPlace && (
         <button
           type="button"
           className="board-hit-area"
@@ -187,30 +234,32 @@ export function PinBoard({
           {detail.point.detail}
         </div>
       )}
-      <div className="board-pin-layer" aria-hidden="true">
-        {visiblePins.map((pin) => (
-          <span
-            key={`${pin.id}-${pin.x}-${pin.y}`}
-            className={`board-pin ${pending ? 'pending-pin' : ''}`}
-            style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
-          >
-            <span className="pin-halo" />
-            <MapPin
-              className="pin-marker"
-              viewBox="2 1 20 21"
-              preserveAspectRatio="xMidYMax meet"
-              strokeWidth={1.8}
+      {!isChoice && (
+        <div className="board-pin-layer" aria-hidden="true">
+          {visiblePins.map((pin) => (
+            <span
+              key={`${pin.id}-${pin.x}-${pin.y}`}
+              className={`board-pin ${pending ? 'pending-pin' : ''}`}
+              style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
+            >
+              <span className="pin-halo" />
+              <MapPin
+                className="pin-marker"
+                viewBox="2 1 20 21"
+                preserveAspectRatio="xMidYMax meet"
+                strokeWidth={1.8}
+              />
+              <span className="pin-touchpoint" />
+            </span>
+          ))}
+          {keyboard && onPlace && (
+            <span
+              className="board-cursor"
+              style={{ left: `${cursor.x}%`, top: `${cursor.y}%` }}
             />
-            <span className="pin-touchpoint" />
-          </span>
-        ))}
-        {keyboard && onPlace && (
-          <span
-            className="board-cursor"
-            style={{ left: `${cursor.x}%`, top: `${cursor.y}%` }}
-          />
-        )}
-      </div>
+          )}
+        </div>
+      )}
       {!onPlace && (
         <span className="sr-only">{pins.length}人のピンを表示中</span>
       )}
