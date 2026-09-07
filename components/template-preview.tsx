@@ -263,7 +263,7 @@ export function TemplatePreview({
   return (
     <div
       ref={canvas}
-      className={`template-board template-${template} ${isMap ? `map-choice-${mapChoice}` : ''} ${interactivePreview ? 'is-interactive-preview' : ''} ${template === 'free' && editable ? 'is-drawing' : ''}`}
+      className={`template-board template-${template} ${isMap ? `map-choice-${mapChoice}` : ''} ${interactivePreview ? 'is-interactive-preview' : ''} ${template === 'free' && editable ? 'is-drawing' : ''} ${preview ? 'has-preview-label' : ''}`}
       aria-label={`${template}のプレビュー`}
       role="application"
       tabIndex={interactivePreview ? 0 : undefined}
@@ -370,10 +370,43 @@ export function TemplatePreview({
                 }}
               >
                 <span className="choice-option-text">
-                  {option || `選択肢${index + 1}`}
+                  {option || `カード${index + 1}`}
                 </span>
-                {typeof count === 'number' && (
-                  <span className="choice-option-count">{count}</span>
+                {(selected || (typeof count === 'number' && count > 0)) && (
+                  <span
+                    className="choice-option-pins"
+                    aria-label={[
+                      selected ? '自分のピン' : '',
+                      typeof count === 'number' && count > 0
+                        ? `${count}人がピンを置きました`
+                        : '',
+                    ]
+                      .filter(Boolean)
+                      .join('、')}
+                  >
+                    {selected && (
+                      <MapPin
+                        className="choice-pin-mini is-own"
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      />
+                    )}
+                    {typeof count === 'number' &&
+                      count > 0 &&
+                      Array.from({ length: Math.min(count, 5) }).map((_, i) => (
+                        <MapPin
+                          key={i}
+                          className="choice-pin-mini"
+                          strokeWidth={1.8}
+                          aria-hidden="true"
+                        />
+                      ))}
+                    {typeof count === 'number' && count > 5 && (
+                      <span className="choice-pin-more" aria-hidden="true">
+                        +{count - 5}
+                      </span>
+                    )}
+                  </span>
                 )}
               </button>
             );
