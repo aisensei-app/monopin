@@ -20,7 +20,7 @@
           "question": {
             ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 160"
           },
-          "template": { ".validate": "newData.isString() && (newData.val() === 'mood' || newData.val() === 'world' || newData.val() === 'japan' || newData.val() === 'matrix' || newData.val() === 'free' || newData.val() === 'image')" },
+          "template": { ".validate": "newData.isString() && (newData.val() === 'mood' || newData.val() === 'world' || newData.val() === 'japan' || newData.val() === 'map' || newData.val() === 'matrix' || newData.val() === 'free' || newData.val() === 'image' || newData.val() === 'choice')" },
           "layout": { ".validate": "newData.isString() && newData.val().length <= 50000" },
           "soundEnabled": { ".validate": "newData.isBoolean()" },
           "revision": {
@@ -93,7 +93,7 @@
           ".validate": "$question.matches(/^[a-f0-9]{12}$/) && (!newData.exists() || newData.hasChildren(['text','order','template','caption','imageUrl','layout','soundEnabled']))",
           "text": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 160" },
           "order": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 100" },
-          "template": { ".validate": "newData.isString() && (newData.val() === 'mood' || newData.val() === 'world' || newData.val() === 'japan' || newData.val() === 'matrix' || newData.val() === 'free' || newData.val() === 'image')" },
+          "template": { ".validate": "newData.isString() && (newData.val() === 'mood' || newData.val() === 'world' || newData.val() === 'japan' || newData.val() === 'map' || newData.val() === 'matrix' || newData.val() === 'free' || newData.val() === 'image' || newData.val() === 'choice')" },
           "caption": { ".validate": "newData.isString() && newData.val().length <= 80" },
           "imageUrl": { ".validate": "newData.isString() && newData.val().length <= 1000" },
           "layout": { ".validate": "newData.isString() && newData.val().length <= 50000" },
