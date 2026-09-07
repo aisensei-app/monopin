@@ -4,7 +4,7 @@ import { getDatabase, ref, set, remove, get, update, onValue, runTransaction, se
 import type { RoomAction, RoomState } from './room-service';
 
 export type SavedRoom = { id: string; title: string; questions: string[]; createdAt: number; expiresAt: number };
-export type QuestionTemplate = 'mood' | 'world' | 'japan' | 'matrix' | 'free' | 'image';
+export type QuestionTemplate = 'mood' | 'world' | 'japan' | 'map' | 'matrix' | 'free' | 'image' | 'choice';
 export type RoomQuestion = { id: string; text: string; order: number; template?: QuestionTemplate; caption?: string; imageUrl?: string; layout?: string; soundEnabled?: boolean };
 const ROOM_PLACEHOLDER = '質問を準備してください';
 const ROOM_RETENTION_MS = 10 * 24 * 60 * 60 * 1000;
