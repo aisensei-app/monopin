@@ -172,4 +172,4 @@ export default function HostPage() {
       <AlertDialog open={confirm} onOpenChange={(open) => { if (!busy) setConfirm(open); }}><AlertDialogContent><AlertDialogTitle>回答をリセットしますか？</AlertDialogTitle><AlertDialogDescription>今の{total}人分の回答を消して、同じ質問にもう一度回答できるようにします。</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel disabled={busy}>キャンセル</AlertDialogCancel><AlertDialogAction disabled={busy} onClick={() => update('reset')}>{busy ? 'リセット中…' : 'リセットする'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </main>
   );
-          }
+}
