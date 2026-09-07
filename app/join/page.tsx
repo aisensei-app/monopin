@@ -43,12 +43,12 @@ export default function JoinPage() {
       <section className="student-card" aria-labelledby="question">
         <div className="question-index"><span>01</span> {data?.title || 'ピンで回答'}</div>
         <h1 id="question">{data?.question || QUESTION}</h1>
-        <p className="student-instruction">{data?.template === 'choice' ? '当てはまる選択肢をタップしよう！' : '画面をタップして、ピンしよう！'}</p>
+        <p className="student-instruction">{data?.template === 'choice' ? '気になるカードにピンを置こう！' : '画面をタップして、ピンしよう！'}</p>
         <PinBoard own={selected} pending={pending} onPlace={vote} disabled={pending !== null || !data || !room || !data.open || !!error} moodPoints={moodPoints} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} />
         <div className={`answer-status ${selected !== null ? 'is-sent' : ''}`} role="status" aria-live="polite">
-          {pending !== null ? <><LoaderCircle className="spinning" size={22} />{data?.template === 'choice' ? '送信しています…' : 'ピンを送っています…'}</> : error || notice ? <span>{notice || error}</span> : !data ? <><LoaderCircle className="spinning" size={22} />質問に接続しています…</> : data?.ended ? 'ご参加ありがとうございました。' : data?.open === false ? 'この質問の受付は終了しました。' : selected !== null ? <><CheckCheck size={24} />{data?.template === 'choice' ? '選びました' : 'ピンを置きました'}</> : data?.template === 'choice' ? '選択肢をタップしてください' : 'ボードの好きな場所をタップしてください'}
+          {pending !== null ? <><LoaderCircle className="spinning" size={22} />ピンを置いています…</> : error || notice ? <span>{notice || error}</span> : !data ? <><LoaderCircle className="spinning" size={22} />質問に接続しています…</> : data?.ended ? 'ご参加ありがとうございました。' : data?.open === false ? 'この質問の受付は終了しました。' : selected !== null ? <><CheckCheck size={24} />ピンを置きました</> : data?.template === 'choice' ? 'カードにピンを置いてください' : 'ボードの好きな場所をタップしてください'}
         </div>
-        <p className="answer-hint">{data?.template === 'choice' ? (selected !== null ? '別の選択肢をタップすると、回答が変わります。' : '選択肢の中から1つをタップして選んでください。') : selected !== null ? '別の場所をタップすると、ピンが移動します。' : '境界の上でも、端でも、好きな場所に置けます。'}</p>
+        <p className="answer-hint">{data?.template === 'choice' ? (selected !== null ? '別のカードをタップすると、ピンが移動します。' : 'カードの中から1枚をタップして、ピンを置いてください。') : selected !== null ? '別の場所をタップすると、ピンが移動します。' : '境界の上でも、端でも、好きな場所に置けます。'}</p>
       </section>
       <footer className="student-footer">名前の入力は不要です。先生の画面には、みんなのピンが表示されます。</footer>
     </main>
