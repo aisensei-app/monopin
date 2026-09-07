@@ -4,10 +4,12 @@ import {
   ArrowLeft,
   Check,
   Copy,
+  FileText,
   GripVertical,
   ImagePlus,
   LoaderCircle,
   LockKeyhole,
+  Paintbrush,
   Pencil,
   Plus,
   Trash2,
@@ -383,13 +385,13 @@ export default function QuestionEditor() {
                         ) : item.id === 'mood' ? (
                           '🙂'
                         ) : item.id === 'choice' ? (
-                          '🔘'
+                          <FileText size={24} />
                         ) : item.id === 'map' ? (
                           '🗺️'
                         ) : item.id === 'matrix' ? (
                           '＋'
                         ) : (
-                          '·'
+                          <Paintbrush size={24} />
                         )}
                       </span>
                       <strong>
