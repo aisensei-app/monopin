@@ -26,6 +26,7 @@ export function PinBoard({
   onPlace,
   disabled = false,
   moodPoints,
+  moodTextOnly = false,
   template = 'mood',
   layout = '',
 }: {
@@ -35,6 +36,7 @@ export function PinBoard({
   onPlace?: (point: Point) => void;
   disabled?: boolean;
   moodPoints?: MoodPoint[];
+  moodTextOnly?: boolean;
   template?: QuestionTemplate;
   layout?: string;
 }) {
@@ -63,7 +65,9 @@ export function PinBoard({
                 style={{ left: `${position.x}%`, top: `${position.y}%` }}
               >
                 <>
-                  <span className="mood-emoji">{points[index].emoji}</span>
+                  {!moodTextOnly && (
+                    <span className="mood-emoji">{points[index].emoji}</span>
+                  )}
                   <span>{points[index].label}</span>
                 </>
               </div>
