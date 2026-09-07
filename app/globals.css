@@ -292,9 +292,12 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="
 @media(max-width:480px) { .editor-shell { padding:0 16px 30px; } .editor-card { padding:24px 18px; } .prepared-question { gap:7px; padding:10px; } .question-actions button { width:29px; } }
 @media(max-width:560px) { .host-dock { bottom:10px; width:calc(100% - 20px); justify-content:space-between; border-radius:14px; }.host-dock-main { min-width:0; flex:1; padding:11px 8px; font-size:14px; }.host-dock-icon { width:36px; height:38px; }.host-dock-grip { display:none; }.host-tools-popover { right:10px; bottom:72px; }.host-edit-panel { top:auto; bottom:0; height:min(78dvh,620px); border-top:1px solid #b9dfe3; border-left:0; border-radius:20px 20px 0 0; }.host-layout { padding-bottom:74px; } }
 /* 文字数カウンター(全入力欄共通) */
-.field-with-counter { position:relative; display:flex; flex-direction:row-reverse; align-items:center; gap:6px; }
+.field-with-counter { position:relative; display:flex; align-items:center; gap:6px; }
 .field-with-counter input,.field-with-counter textarea { flex:1; min-width:0; }
 .field-with-counter .char-counter { flex:none; }
+/* 横並びの入力欄だけ内側に配置。気分欄の padding 指定にも優先する。 */
+.field-with-counter:not(.field-with-counter-block) > input { padding-right:48px!important; }
+.field-with-counter:not(.field-with-counter-block) > .char-counter { position:absolute; right:10px; top:50%; transform:translateY(-50%); pointer-events:none; }
 .field-with-counter-block { display:grid; gap:3px; }
 .field-with-counter-block textarea { width:100%; }
 .field-with-counter-block .char-counter { justify-self:start; }
