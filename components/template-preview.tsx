@@ -110,9 +110,6 @@ export function TemplatePreview({
   onTextBoxesChange,
   mapChoice = 'world',
   choiceOptions = [],
-  onChoiceSelect,
-  selectedChoiceIndex = null,
-  choiceCounts,
   choicePins,
   onChoicePlace,
   choiceDisabled = false,
@@ -134,9 +131,6 @@ export function TemplatePreview({
   onTextBoxesChange?: (next: MapBubble[]) => void;
   mapChoice?: MapChoice;
   choiceOptions?: string[];
-  onChoiceSelect?: (index: number) => void;
-  selectedChoiceIndex?: number | null;
-  choiceCounts?: number[];
   choicePins?: { id: number | string; x: number; y: number }[];
   onChoicePlace?: (point: { x: number; y: number }) => void;
   choiceDisabled?: boolean;
