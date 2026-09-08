@@ -14,8 +14,8 @@ import type { QuestionTemplate } from '@/lib/firebase-room-service';
 import { playPinSound } from '@/lib/pin-sound';
 
 export default function JoinPage() {
-  const [room,setRoom] = useState('');
-  const { data, error, mutate } = useEventRoom(room);
+  const [room,setRoom] = useState<string | null>(null);
+  const { data, error, mutate } = useEventRoom(room || '');
   const [pending, setPending] = useState<Point | null>(null);
   const [notice, setNotice] = useState('');
   const [muted, setMuted] = useState(false);
@@ -36,10 +36,12 @@ export default function JoinPage() {
   }
   const selected = data?.selected ?? null;
   const moodPoints:MoodPoint[]|undefined = data?.template === 'mood' && data.layout ? parseMoodLayout(data.layout) : undefined;
+  if (room === null) return <main className="student-shell"><div className="board-loading" role="status"><LoaderCircle className="spinning" size={24} />読み込んでいます…</div></main>;
   if (!room) return <main className="student-shell"><section className="student-card"><h1>参加用URLからお入りください</h1><p>主催者から届いたQRコードか、チャットに貼られた参加URLを開いてください。</p></section></main>;
+  if (!data) return <main className="student-shell"><div className="board-loading" role="status">{error || <><LoaderCircle className="spinning" size={24} />読み込んでいます…</>}</div></main>;
   return (
     <main className="student-shell">
-      <header className="student-header"><Wordmark href={typeof window === 'undefined' ? '#' : window.location.href} /><div className="student-header-actions"><span className="eyebrow">{data?.ended ? '終了' : data?.open === false ? '受付終了' : '参加者の画面'}</span>{data?.soundEnabled && <button type="button" className="sound-mute-button" aria-label={muted?'効果音を出す':'効果音を消す'} aria-pressed={muted} onClick={()=>setMuted(value=>!value)}>{muted?<VolumeX size={18}/>:<Volume2 size={18}/>}</button>}</div></header>
+      <header className="student-header"><Wordmark href={typeof window === 'undefined' ? '#' : window.location.href} /><div className="student-header-actions"><span className={`connection ${data?.ended ? '' : data?.open === false ? 'is-closed' : 'is-open'}`}><span />{data?.ended ? '終了' : data?.open === false ? '回答受付終了' : '回答受付中'}</span>{data?.soundEnabled && <button type="button" className="sound-mute-button" aria-label={muted?'効果音を出す':'効果音を消す'} aria-pressed={muted} onClick={()=>setMuted(value=>!value)}>{muted?<VolumeX size={18}/>:<Volume2 size={18}/>}</button>}</div></header>
       <section className="student-card" aria-labelledby="question">
         <div className="question-index"><span>01</span> {data?.title || 'ピンで回答'}</div>
         <h1 id="question">{data?.question || QUESTION}</h1>
