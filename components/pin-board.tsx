@@ -22,20 +22,6 @@ const moodLandmarks = (count: number) => {
   }));
 };
 
-const choiceIndexFromPoint = (count: number, point: { x: number; y: number }) => {
-  const landmarks = moodLandmarks(count);
-  let closest = 0;
-  let bestDistance = Infinity;
-  landmarks.forEach((landmark, index) => {
-    const distance = Math.hypot(landmark.x - point.x, landmark.y - point.y);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      closest = index;
-    }
-  });
-  return closest;
-};
-
 export function PinBoard({
   pins = [],
   own,
