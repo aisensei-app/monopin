@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Copy, MapPin, Plus, Settings, Trash2 } from 'lucide-react';
 import { createRoom, deleteSavedRoom, getSavedRooms, roomUrl, cloudMode, type SavedRoom } from '@/lib/room-service';
 import { Wordmark } from '@/components/wordmark';
@@ -7,6 +7,9 @@ import { trackEvent } from '@/components/analytics';
 import { AccountMenu } from '@/components/account-menu';
 
 type Screen = 'start' | 'new' | 'history';
+// On mobile, Google login redirects to a new page and back (see confirmLogin),
+// so whatever the user was trying to do has to survive that round-trip here.
+const LOGIN_INTENT_KEY = 'monopin-login-intent';
 function dateLabel(value: number) {
   return new Intl.DateTimeFormat('ja-JP',{year:'numeric',month:'short',day:'numeric'}).format(value);
 }
@@ -24,10 +27,26 @@ export default function Lobby() {
   const [loadingRooms,setLoadingRooms]=useState(false);
   const [selectedRoom,setSelectedRoom]=useState<SavedRoom|null>(null);
   const [loginIntent,setLoginIntent]=useState<'create'|'history'|null>(null);
-  async function createNewRoom() {
+  useEffect(() => {
+    if (!cloudMode) return;
+    (async () => {
+      let saved: {intent:'create'|'history';title?:string} | null = null;
+      try { const raw=sessionStorage.getItem(LOGIN_INTENT_KEY); if (raw) saved=JSON.parse(raw); } catch {}
+      let loggedIn = false;
+      try { loggedIn = await (await import('@/lib/firebase-room-service')).consumeRedirectLogin(); }
+      catch { if (saved) setError('Googleログインを完了できませんでした。もう一度お試しください。'); }
+      finally { try{sessionStorage.removeItem(LOGIN_INTENT_KEY);}catch{} }
+      if (!loggedIn || !saved) return;
+      if (saved.intent==='create') { setScreen('new'); if (saved.title) setTitle(saved.title); await createNewRoom(saved.title); }
+      else { await loadHistory(); }
+    })();
+    // Runs once on mount to pick up where a mobile Google-login redirect left off.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  async function createNewRoom(titleOverride?: string) {
     setBusy(true);setError('');
     try{
-      const room=await createRoom(title);
+      const room=await createRoom(titleOverride ?? title);
       trackEvent('create_room');
       try{localStorage.setItem('monopin-last-room',room);}catch{}
       window.location.assign(roomUrl('editor',room));
@@ -61,7 +80,10 @@ export default function Lobby() {
     if(!intent)return;
     setBusy(true);setError('');
     try {
+      // Saved so a mobile redirect can resume this after the round-trip; see the mount effect above.
+      try{sessionStorage.setItem(LOGIN_INTENT_KEY,JSON.stringify({intent,title}));}catch{}
       await (await import('@/lib/firebase-room-service')).loginHost();
+      try{sessionStorage.removeItem(LOGIN_INTENT_KEY);}catch{}
       setLoginIntent(null);setBusy(false);
       if(intent==='create')await createNewRoom();else await loadHistory();
     } catch { setError('Googleログインを完了できませんでした。もう一度お試しください。');setBusy(false); }
