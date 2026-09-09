@@ -15,7 +15,7 @@ function dateLabel(value: number) {
 }
 function questionLines(questions: string[]) {
   if (questions.length === 0) return ['まだ質問がありません。'];
-  return questions.map(question => question.length > 10 ? question.slice(0,10) + '…' : question);
+  return questions;
 }
 
 export default function Lobby() {
