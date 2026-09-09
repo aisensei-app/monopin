@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, signInAnonymously, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { getAuth, signInAnonymously, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from 'firebase/auth';
 import { getDatabase, ref, set, remove, get, update, onValue, runTransaction, serverTimestamp } from 'firebase/database';
 import type { RoomAction, RoomState } from './room-service';
 
@@ -26,10 +26,26 @@ async function identity() {
   }
   return auth.currentUser!;
 }
+// Popup-based Google sign-in is unreliable on mobile browsers (the popup's
+// postMessage handshake with the opener can fail under mobile tab-lifecycle
+// constraints), so mobile falls back to a full-page redirect flow instead.
+function isMobileDevice() {
+  return typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
 export async function loginHost() {
   const {auth} = services();
   await auth.authStateReady();
-  if (!auth.currentUser || auth.currentUser.isAnonymous) await signInWithPopup(auth,new GoogleAuthProvider());
+  if (!auth.currentUser || auth.currentUser.isAnonymous) {
+    const provider = new GoogleAuthProvider();
+    if (isMobileDevice()) await signInWithRedirect(auth,provider); else await signInWithPopup(auth,provider);
+  }
+}
+// Call once on page load: resolves true if the page just returned from a
+// mobile signInWithRedirect round-trip and the login succeeded.
+export async function consumeRedirectLogin(): Promise<boolean> {
+  const {auth} = services();
+  const result = await getRedirectResult(auth);
+  return !!result?.user;
 }
 export async function isHostLoggedIn() {
   const {auth} = services();
@@ -45,7 +61,7 @@ export async function switchHostAccount() {
   await signOut(auth);
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({prompt:'select_account'});
-  await signInWithPopup(auth,provider);
+  if (isMobileDevice()) await signInWithRedirect(auth,provider); else await signInWithPopup(auth,provider);
 }
 async function cleanSavedRooms(uid: string) {
   const {db} = services();
