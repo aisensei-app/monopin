@@ -14,6 +14,17 @@ import type { QuestionTemplate } from '@/lib/firebase-room-service';
 import { AccountMenu } from '@/components/account-menu';
 import { CharCounter } from '@/components/char-counter';
 
+// Long question text should never be cut off: instead of clamping to a fixed
+// number of lines, step the font size down as the text grows so it always
+// wraps to fully visible lines within the panel's max width.
+function questionSizeClass(text: string) {
+  const len = text.length;
+  if (len > 120) return 'q-size-xs';
+  if (len > 80) return 'q-size-s';
+  if (len > 45) return 'q-size-m';
+  return '';
+}
+
 export default function HostPage() {
   const [room,setRoom] = useState<string | null>(null);
   const { data, error, mutate, mutating } = useEventRoom(room || '');
@@ -156,9 +167,9 @@ export default function HostPage() {
       <header className="host-header"><Wordmark href={homeUrl} /><span className="header-divider" /><span className="eyebrow">{data?.title || 'みんなのピンボード'}</span><div className="header-actions"><span className="anonymous-label">匿名で回答</span><span className={`connection ${error ? 'offline' : data ? (data.ended ? '' : data.open ? 'is-open' : 'is-closed') : ''}`}><span />{error ? '接続を確認中' : data ? data.ended ? '終了済み' : data.open ? '回答受付中' : '回答受付終了' : '接続中'}</span><AccountMenu /></div></header>
       <div className="host-layout">
         <section className="results-panel" aria-labelledby="host-question">
-          <div className="host-meta-row"><span /><div className="question-switcher" aria-label="質問の切り替え"><button type="button" onClick={() => switchQuestion('prev')} disabled={!canPrevQuestion || busy || mutating} title={switchTitle('prev')}><ChevronLeft size={16}/>前へ</button>{questions.length > 0 && <span className="question-switcher-count">{hasValidCurrent ? `${currentQuestionIndex + 1} / ${questions.length}` : `- / ${questions.length}`}</span>}<button type="button" onClick={() => switchQuestion('next')} disabled={!canNextQuestion || busy || mutating} title={switchTitle('next')}>次へ<ChevronRight size={16}/></button></div><div className="total"><Users size={21} /><strong>{total}</strong><span>人が回答</span></div></div>
-          <h1 id="host-question">{data?.question || QUESTION}</h1>
+          <h1 id="host-question" className={questionSizeClass(data?.question || QUESTION)}>{data?.question || QUESTION}</h1>
           <div className="host-board-wrap"><PinBoard pins={data?.showAnswers === false ? [] : data?.pins || []} moodPoints={moodPoints} template={(data?.template as QuestionTemplate) || 'mood'} layout={data?.layout || ''} /></div>
+          <div className="host-meta-row"><span /><div className="question-switcher" aria-label="質問の切り替え"><button type="button" onClick={() => switchQuestion('prev')} disabled={!canPrevQuestion || busy || mutating} title={switchTitle('prev')}><ChevronLeft size={16}/>前へ</button>{questions.length > 0 && <span className="question-switcher-count">{hasValidCurrent ? `${currentQuestionIndex + 1} / ${questions.length}` : `- / ${questions.length}`}</span>}<button type="button" onClick={() => switchQuestion('next')} disabled={!canNextQuestion || busy || mutating} title={switchTitle('next')}>次へ<ChevronRight size={16}/></button></div><div className="total"><Users size={21} /><strong>{total}</strong><span>人が回答</span></div></div>
           <div className="results-footnote" role="status">{error || message || (data?.showAnswers === false ? '回答は主催者画面で非表示です。参加者の回答は受け付けています。' : data?.template === 'choice' ? (total ? 'みんなが置いた位置にピンが表示されます。' : 'まだ回答はありません。QRコードから参加して、カードにピンを。') : (total ? 'ピンが重なる場所ほど、色が濃くなります。' : 'まだピンはありません。QRコードから参加して、好きな場所をタップ。'))}</div>
         </section>
         <aside className="participation-panel">
