@@ -21,7 +21,6 @@ export default function HostPage() {
   const [joinUrl, setJoinUrl] = useState('');
   const [localOnly, setLocalOnly] = useState(true);
   const [confirm, setConfirm] = useState(false);
-  const [questionEditConfirm, setQuestionEditConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [editing, setEditing] = useState(false);
@@ -114,6 +113,20 @@ export default function HostPage() {
     catch { setMessage('更新できませんでした。接続を確認して、もう一度お試しください。'); }
     finally { setBusy(false); }
   }
+  async function saveQuestionText() {
+    if (!hasValidCurrent) { await update('question'); return; }
+    const current = questions.find(q => q.id === data?.currentQuestionId);
+    if (!room || !current) { await update('question'); return; }
+    setBusy(true); setMessage('');
+    try {
+      const service = await import('@/lib/firebase-room-service');
+      await service.saveRoomQuestion(room, { ...current, text: draft });
+      setQuestions(qs => qs.map(q => (q.id === current.id ? { ...q, text: draft.trim() } : q)));
+      setEditing(false); setToolsOpen(false);
+    }
+    catch { setMessage('更新できませんでした。接続を確認して、もう一度お試しください。'); }
+    finally { setBusy(false); }
+  }
   async function switchQuestion(direction: 'prev' | 'next') {
     setBusy(true); setMessage('');
     try { await mutate({ action: 'switch-question', direction }); }
@@ -163,17 +176,16 @@ export default function HostPage() {
           <p className="field-note">{titleMessage || 'いつでも変更できます。トップ画面の一覧にもすぐに反映されます。'}</p>
         </form>
         <hr className="field-divider" />
-        <form onSubmit={(e) => { e.preventDefault(); if (hasValidCurrent) setQuestionEditConfirm(true); else update('question'); }}>
+        <form onSubmit={(e) => { e.preventDefault(); saveQuestionText(); }}>
           <label htmlFor="question-draft">質問文</label>
           <textarea id="question-draft" value={draft} maxLength={160} disabled={!!data?.open} onChange={(e) => setDraft(e.target.value)} />
           <CharCounter value={draft} max={160} />
-          <p>{data?.open ? '受付中は質問を変更できません。先に受付を終了してください。' : '更新すると、現在の回答は新しい質問用に切り替わります。'}</p>
+          <p>{data?.open ? '受付中は質問を変更できません。先に受付を終了してください。' : hasValidCurrent ? '更新すると、質問一覧の保存内容にも反映されます。' : '更新すると、現在の回答は新しい質問用に切り替わります。'}</p>
           
           <button className="primary-button" disabled={busy || !!data?.open || !draft.trim()}>{busy ? '更新中…' : '更新'}</button>
         </form>
       </aside>}
       <AlertDialog open={confirm} onOpenChange={(open) => { if (!busy) setConfirm(open); }}><AlertDialogContent><AlertDialogTitle>回答をリセットしますか？</AlertDialogTitle><AlertDialogDescription>今の{total}人分の回答を消して、同じ質問にもう一度回答できるようにします。</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel disabled={busy}>キャンセル</AlertDialogCancel><AlertDialogAction disabled={busy} onClick={() => update('reset')}>{busy ? 'リセット中…' : 'リセットする'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
-      <AlertDialog open={questionEditConfirm} onOpenChange={(open) => { if (!busy) setQuestionEditConfirm(open); }}><AlertDialogContent><AlertDialogTitle>質問一覧との対応が外れます</AlertDialogTitle><AlertDialogDescription>ここで質問文を更新すると、この質問は保存済みの「質問一覧」との対応が外れ、以後「前へ/次へ」で他の質問に切り替えられなくなります。切り替えられるようにするには、あとで質問一覧の画面から該当の質問を編集・保存し直す必要があります。よろしければ「更新する」を押してください。質問一覧の内容を直接編集したい場合は、キャンセルしてから「質問一覧」画面をご利用ください。</AlertDialogDescription><AlertDialogFooter><AlertDialogCancel disabled={busy}>キャンセル</AlertDialogCancel><AlertDialogAction disabled={busy} onClick={() => { setQuestionEditConfirm(false); update('question'); }}>{busy ? '更新中…' : '更新する'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
     </main>
   );
 }
