@@ -154,7 +154,9 @@ export async function changeRoom(room: string,action: RoomAction) {
   if (action.action === 'title') {
     const title = (action.title || '').trim();
     if (!title || title.length > 20) throw new Error('部屋の名前は20文字以内で入力してください。');
-    await set(ref(db,`rooms/${room}/meta/title`), title);
+    // Also update the denormalized copy in hostRooms/{uid}/{room}, which is what
+    // the top screen's saved-room list and the question-list screen's title read.
+    await update(ref(db),{[`rooms/${room}/meta/title`]:title,[`hostRooms/${user.uid}/${room}/title`]:title});
     return;
   }
   if (action.action === 'switch-question') {
